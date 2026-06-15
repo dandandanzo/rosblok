@@ -1,0 +1,555 @@
+    ----------------------------------------------------------------------
+    -- CONFIG  (edit here)
+    ----------------------------------------------------------------------
+    getgenv().Config = {
+
+        PlantBuy = true,
+        PlantBuyConfig = {
+            -- per-seed plant target (max planted in garden)
+            Targets = {
+                ["Strawberry"] = 10,
+                ["Blueberry"] = 10,
+                ["Bamboo"] = 100,
+                ["Mushroom"] = 10,
+                ["Dragon Fruit"] = 10,
+                ["Poison Ivy"] = 10,
+                ["Venus Fly Trap"] = 10,
+                ["Pomegranate"] = 10,
+                ["Acorn"] = 10,
+                ["Cherry"] = 10,
+                ["Dragon's Breath"] = 10,
+                ["Moon Bloom"] = 10,
+            },
+            -- seeds that KEEP buying even after their plant target is reached
+            -- (stockpile). seeds not listed stop buying once planted >= target.
+            KeepBuyingAfterTarget = { "Mushroom", "Bamboo" },
+            BuyMaxPerRestock    = 0,    -- 0 = buy all available stock per restock
+            MinSheckles         = 0,
+            MinSpacing          = 1.6,
+            PlantDelay          = 0.25,
+            PlantConfirmTimeout = 1.5,
+            CheckInterval       = 5,
+            Debug = true,
+        },
+
+        Harvest = true,
+        HarvestConfig = {
+            -- seeds harvested ONLY when mutated (any mutation); others harvest normally
+            MutationOnly = { "Bamboo", "Mushroom" },
+            Mutations    = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
+            RipeOnly     = true,
+            HarvestInterval  = 5,
+            FireDelay        = 0.15,
+            MaxPerSweep      = 200,
+            YieldEvery       = 40,
+            Debug = true,
+        },
+
+        SeedGrab = true,
+        SeedGrabConfig = {
+            GrabRainbow = true, GrabGold = true, GrabAllSeedPacks = false,
+            ReturnAfter = true,
+            AntiAfk = true, AntiAfkInterval = 600,
+            YOffset = 3.0, ClaimTimeout = 2, LoopGap = 0.30,
+            Debug = true,
+        },
+
+        Mail = false,    -- 4th parallel thread; needs a real TargetUsername (placeholder rejected)
+        MailConfig = {
+            TargetUsername = "DanzoCAW1", -- recipient
+            TargetUserId   = nil,
+            MessageMail    = "hai",
+            ListItem       = "Mushroom",  -- "Tulip" / "Tulip, Carrot" / "all"
+            SendWhenCount  = 10,
+            SendAmount     = 0,           -- 0 = send all you have past threshold
+            WatchInterval  = 5,
+            Blacklist      = {},
+            MaxPerItem     = 0,
+            DryRun         = false,       -- LIVE: actually sends. set true for preview-only
+            SendDebounce   = 2.0,
+            MaxItemsPerGift= 20,
+            Debug = true,
+        },
+
+        Sell = true,    -- independent auto-sell thread (separate from Harvest)
+        SellConfig = {
+            -- "full"   = sell only when the fruit backpack hits the threshold (default)
+            -- "always" = sell whenever you carry any fruit (old behaviour)
+            Mode             = "full",
+            SellAtFruitCount = 90,   -- (full mode) sell once FruitCount >= this   e.g. 90/100
+            SellAtPercent    = 0,    -- 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
+            CheckInterval    = 3,    -- seconds between capacity checks
+            Debug = true,
+        },
+    }
+
+    local RS      = game:GetService("ReplicatedStorage")
+    local CS      = game:GetService("CollectionService")
+    local Players = game:GetService("Players")
+    local lp      = Players.LocalPlayer
+    local Packet  = require(RS.SharedModules.Packet)
+
+    local G = (typeof(getgenv) == "function" and getgenv()) or _G
+    -- supersede any standalone predecessors so nothing double-runs
+    G.__GAG2_PB = false; G.__GAG2_PLANT = false; G.__GAG2_BUY = false
+    G.__GAG2_HARVEST = false; G.__GAG2_HS = false; G.__GAG2_HMUT = false
+    G.__GAG2_SEEDGRAB = false; G.__GAG2_MAIL = false
+    G.__GAG2_ALL_GEN = (tonumber(G.__GAG2_ALL_GEN) or 0) + 1
+    local MY = G.__GAG2_ALL_GEN
+    G.__GAG2_ALL = true
+    local function alive() return G.__GAG2_ALL_GEN == MY and G.__GAG2_ALL ~= false end
+
+    local Cfg = getgenv().Config
+
+    local function getPlot()
+        local id = lp:GetAttribute("PlotId")
+        return id and workspace:FindFirstChild("Gardens") and workspace.Gardens:FindFirstChild("Plot" .. tostring(id))
+    end
+
+    local function runPlantBuy(C)
+        local function active() return alive() and Cfg.PlantBuy ~= false end
+        local function dbg(...) if C.Debug then print("[PB]", ...) end end
+
+        local P_Buy = Packet("PurchaseSeed")
+        local PlayerStateClient = require(RS.ClientModules.PlayerStateClient)
+        local SeedData = require(RS.SharedModules.SeedData)
+        local PRICE = {}
+        for _, e in pairs(SeedData) do if type(e)=="table" and e.SeedName then PRICE[e.SeedName] = tonumber(e.PurchasePrice) or 0 end end
+
+        local SS = RS:WaitForChild("StockValues", 20) and RS.StockValues:WaitForChild("SeedShop", 20)
+        if not SS then warn("[PB] StockValues.SeedShop not found - plant+buy aborting"); return end
+        local ITEMS = SS:WaitForChild("Items", 20)
+
+        local replica = PlayerStateClient:WaitForLocalReplica(PlayerStateClient, 30)
+        if not replica then warn("[PB] PlayerState replica unavailable - plant+buy aborting"); return end
+        local function data() return replica.Data end
+        local function sheckles() local d=data(); return (d and d.Sheckles) or 0 end
+        local function invCount(n) local d=data(); local s=d and d.Inventory and d.Inventory.Seeds; return (s and s[n]) or 0 end
+        local function purchasedCount(n) local d=data(); local p=d and d.PurchasedThisRestock and d.PurchasedThisRestock.Seeds; return (p and p[n]) or 0 end
+        local function stockRemaining(n) local v=ITEMS:FindFirstChild(n); local mx=(v and v:IsA("ValueBase") and v.Value) or 0; return math.max(0, mx - purchasedCount(n)) end
+
+        local function plantedCount(name)
+            local plot=getPlot(); local plants=plot and plot:FindFirstChild("Plants")
+            if not plants then return 0 end
+            local c=0 for _,pl in ipairs(plants:GetChildren()) do if pl:GetAttribute("SeedName")==name then c=c+1 end end
+            return c
+        end
+        local function findSeedTool(name)
+            local bp=lp:FindFirstChildOfClass("Backpack")
+            if bp then for _,t in ipairs(bp:GetChildren()) do if t:IsA("Tool") and t:GetAttribute("SeedTool")==name then return t end end end
+            if lp.Character then for _,t in ipairs(lp.Character:GetChildren()) do if t:IsA("Tool") and t:GetAttribute("SeedTool")==name then return t end end end
+        end
+
+        local KEEPBUY = {}
+        for _, s in ipairs(C.KeepBuyingAfterTarget or {}) do KEEPBUY[tostring(s)] = true end
+        local function wantPlant(n, t) return plantedCount(n) < t end
+        local function wantBuy(n, t)
+            if KEEPBUY[n] then return true end
+            return (plantedCount(n) + invCount(n)) < t
+        end
+
+        local function buySeed(name, cap)
+            local price = PRICE[name] or 0
+            local bought = 0
+            while active() do
+                if cap and cap>0 and bought>=cap then break end
+                if stockRemaining(name) <= 0 then break end
+                if C.MinSheckles>0 and (sheckles()-price) < C.MinSheckles then break end
+                if sheckles() < price then break end
+                local before = purchasedCount(name)
+                pcall(function() P_Buy:Fire(name) end)
+                local t0=os.clock()
+                repeat task.wait(0.1) until purchasedCount(name)>before or not active() or os.clock()-t0>1.5
+                if purchasedCount(name)>before then bought=bought+1 else break end
+            end
+            return bought
+        end
+
+        local function plantTopUp(name, target)
+            local plot=getPlot(); if not plot then return 0 end
+            local plants=plot:FindFirstChild("Plants"); if not plants then return 0 end
+            local need = target - plantedCount(name)
+            if need<=0 then return 0 end
+            need = math.min(need, invCount(name))
+            if need<=0 then return 0 end
+            local tool=findSeedTool(name); if not tool then dbg("no seed tool for", name); return 0 end
+            local hum=lp.Character and lp.Character:FindFirstChildOfClass("Humanoid"); if hum then pcall(function() hum:EquipTool(tool) end) end
+            task.wait(0.2)
+            local areas={}
+            for _,p in ipairs(CS:GetTagged("PlantArea")) do if p:IsDescendantOf(plot) and p:IsA("BasePart") then areas[#areas+1]=p end end
+            if #areas==0 then return 0 end
+            local rp=RaycastParams.new(); rp.FilterType=Enum.RaycastFilterType.Include; rp.FilterDescendantsInstances=areas
+            local occupied={}
+            for _,pl in ipairs(plants:GetChildren()) do local ok,cf=pcall(function() return pl:GetPivot() end); if ok then occupied[#occupied+1]=Vector2.new(cf.Position.X,cf.Position.Z) end end
+            local function farEnough(x,z) local v=Vector2.new(x,z) for _,o in ipairs(occupied) do if (o-v).Magnitude<C.MinSpacing then return false end end return true end
+            local added=0
+            local conn=plants.ChildAdded:Connect(function(m)
+                task.defer(function()
+                    for _=1,20 do if m:GetAttribute("SeedName") then break end task.wait(0.05) end
+                    if m:GetAttribute("SeedName")==name then added=added+1
+                        local ok,cf=pcall(function() return m:GetPivot() end); if ok then occupied[#occupied+1]=Vector2.new(cf.Position.X,cf.Position.Z) end
+                    end
+                end)
+            end)
+            -- Collect candidate spots UP-FRONT in a normal loop (task.wait is safe here).
+            -- DO NOT use a coroutine.wrap generator that calls task.wait(): resuming it
+            -- manually returns task.wait's nil yield, which the consumer reads as
+            -- "exhausted" and bails after the first fully-occupied column -> planting
+            -- stalls in a thin strip and every other seed starves.
+            local want = math.min(need * 3 + 10, 500)   -- a few extra to absorb re-check skips
+            local spots, scanned = {}, 0
+            for _,part in ipairs(areas) do
+                if #spots >= want then break end
+                local hx,hz = part.Size.X/2-1, part.Size.Z/2-1
+                local lx = -hx
+                while lx <= hx do
+                    local lz = -hz
+                    while lz <= hz do
+                        local wp = (part.CFrame*CFrame.new(lx, part.Size.Y/2+0.2, lz)).Position
+                        if farEnough(wp.X, wp.Z) then
+                            local hit = workspace:Raycast(wp+Vector3.new(0,5,0), Vector3.new(0,-20,0), rp)
+                            if hit then spots[#spots+1] = hit.Position; if #spots >= want then break end end
+                        end
+                        scanned = scanned + 1
+                        if scanned % 200 == 0 then task.wait() end
+                        lz = lz + C.MinSpacing
+                    end
+                    if #spots >= want then break end
+                    lx = lx + C.MinSpacing
+                end
+            end
+            if #spots == 0 then dbg(("no free spot for %s (garden full at spacing %.2f)"):format(name, C.MinSpacing)) end
+            local placed = 0
+            for _,pos in ipairs(spots) do
+                if not active() or placed >= need then break end
+                if farEnough(pos.X, pos.Z) then          -- skip spots now too close to ones just planted
+                    local before = added
+                    occupied[#occupied+1] = Vector2.new(pos.X, pos.Z)
+                    pcall(function() Packet("PlantSeed"):Fire(pos, name, tool) end)
+                    local t0 = os.clock()
+                    repeat task.wait(0.1) until added>before or not active() or os.clock()-t0>C.PlantConfirmTimeout
+                    if added>before then placed=placed+1 end
+                    task.wait(C.PlantDelay)
+                end
+            end
+            conn:Disconnect()
+            return placed
+        end
+
+        do local n={} for k,v in pairs(C.Targets) do n[#n+1]=k.."="..tostring(v) end
+        print("[PB] plant+buy started; targets: "..(table.concat(n,", ")=="" and "(none)" or table.concat(n,", "))
+                .."  keepBuying: "..((C.KeepBuyingAfterTarget and #C.KeepBuyingAfterTarget>0) and table.concat(C.KeepBuyingAfterTarget,", ") or "(none)")) end
+
+        while active() do
+            for name, target in pairs(C.Targets) do
+                if not active() then break end
+                if wantBuy(name, target) then local b=buySeed(name, C.BuyMaxPerRestock); if b>0 then dbg(("bought %s x%d (inv %d)"):format(name,b,invCount(name))) end end
+                if wantPlant(name, target) then local p=plantTopUp(name, target); if p>0 then print(("[PB] planted %s x%d (now %d/%d)"):format(name,p,plantedCount(name),target)) end
+                else dbg(("%s target met (%d/%d) - plant stopped%s"):format(name, plantedCount(name), target, KEEPBUY[name] and ", still buying" or ", buy stopped")) end
+            end
+            for _=1, math.max(3, C.CheckInterval) do if not active() then return end task.wait(1) end
+        end
+        print("[PB] stopped.")
+    end
+
+    local function runHarvest(C)
+        local function active() return alive() and Cfg.Harvest ~= false end
+        local function dbg(...) if C.Debug then print("[HARV]", ...) end end
+
+        local P_Collect = Packet("CollectFruit")
+        local MUTONLY={} for _,s in ipairs(C.MutationOnly or {}) do MUTONLY[tostring(s):lower()]=true end
+        local MUT_SET={} for _,m in ipairs(C.Mutations or {}) do MUT_SET[tostring(m):lower()]=true end
+        local function mutationOf(inst)
+            local m=inst:GetAttribute("Mutation")
+            if m==nil or m=="" or m=="None" then return nil end
+            if next(MUT_SET)~=nil and not MUT_SET[tostring(m):lower()] then return nil end
+            return tostring(m)
+        end
+
+        local _plot
+        local function myPlot()
+            if _plot and _plot.Parent then return _plot end
+            local g=workspace:FindFirstChild("Gardens"); if not g then return nil end
+            for _,p in ipairs(g:GetChildren()) do if p:GetAttribute("OwnerUserId")==lp.UserId then _plot=p; return p end end
+        end
+        local last_fire={}; local FIRE_CD=2.0
+
+        local function sweep()
+            local plot=myPlot(); if not plot then return 0 end
+            local plants=plot:FindFirstChild("Plants"); if not plants then return 0 end
+            local now=tick(); local fired,scanned=0,0
+            for _,plant in ipairs(plants:GetChildren()) do
+                if fired>=C.MaxPerSweep or not active() then break end
+                scanned=scanned+1; if scanned % C.YieldEvery == 0 then task.wait() end
+                local seedName=tostring(plant:GetAttribute("SeedName") or ""):lower()
+                local mutOnly=MUTONLY[seedName]==true
+                local fruits=plant:FindFirstChild("Fruits") or plant:FindFirstChild("F")
+                if fruits then
+                    for _,fruit in ipairs(fruits:GetChildren()) do
+                        local fruitId=fruit:GetAttribute("FruitId")
+                        if fruitId~=nil and ((not mutOnly) or mutationOf(fruit)~=nil) then
+                            local plantId=fruit:GetAttribute("PlantId")
+                            local age,maxAge=fruit:GetAttribute("Age"),fruit:GetAttribute("MaxAge")
+                            local ripeOk=(not C.RipeOnly) or (type(age)=="number" and type(maxAge)=="number" and age>=maxAge)
+                            now=tick(); local cdOk=(not last_fire[fruitId]) or (now-last_fire[fruitId]>=FIRE_CD)
+                            if plantId and ripeOk and cdOk then
+                                pcall(function() P_Collect:Fire(plantId, fruitId) end)
+                                last_fire[fruitId]=now; fired=fired+1; task.wait(C.FireDelay)
+                                if fired>=C.MaxPerSweep then break end
+                            end
+                        end
+                    end
+                else
+                    if (not mutOnly) or mutationOf(plant)~=nil then
+                        local plantId=plant:GetAttribute("PlantId")
+                        local ready=plant:GetAttribute("PlantGrowthReady")==true
+                        if not ready then local a,m=plant:GetAttribute("Age"),plant:GetAttribute("MaxAge"); ready=type(a)=="number" and type(m)=="number" and a>=m end
+                        now=tick(); local cdOk=(not last_fire[plantId]) or (now-last_fire[plantId]>=FIRE_CD)
+                        if plantId and ready and cdOk then
+                            pcall(function() P_Collect:Fire(plantId, "") end)
+                            last_fire[plantId]=now; fired=fired+1; task.wait(C.FireDelay)
+                        end
+                    end
+                end
+            end
+            if next(last_fire) then for id,t in pairs(last_fire) do if now-t>FIRE_CD*4 then last_fire[id]=nil end end end
+            return fired
+        end
+
+        print("[HARV] harvest started; mutation-only seeds: "..(#(C.MutationOnly or {})>0 and table.concat(C.MutationOnly,", ") or "(none)"))
+        while active() do
+            -- per-sweep pcall: a transient error (instance destroyed mid-sweep during a
+            -- yield, remote hiccup, etc.) is logged and recovered, NEVER kills the thread.
+            local ok,fired = pcall(sweep)
+            if not ok then
+                warn("[HARV] sweep error (recovered): "..tostring(fired))
+            elseif fired and fired>0 then
+                print(("[HARV] sweep harvested %d"):format(fired))   -- selling handled by the Sell subsystem
+            end
+            for _=1, math.max(2, C.HarvestInterval) do if not active() then return end task.wait(1) end
+        end
+        print("[HARV] stopped.")
+    end
+
+    local function runSell(C)
+        local function active() return alive() and Cfg.Sell ~= false end
+        local function dbg(...) if C.Debug then print("[SELL]", ...) end end
+        local P_Sell = Packet("SellAll")
+        local function fruitCount() return tonumber(lp:GetAttribute("FruitCount")) or 0 end
+        local function maxCap()     return tonumber(lp:GetAttribute("MaxFruitCapacity")) or 100 end
+        local fullMode = (tostring(C.Mode or "full"):lower() ~= "always")
+        local function threshold()
+            if C.SellAtPercent and C.SellAtPercent > 0 then
+                return math.max(1, math.floor(maxCap() * math.clamp(C.SellAtPercent, 0, 1) + 0.5))
+            end
+            return tonumber(C.SellAtFruitCount) or 90
+        end
+        print(("[SELL] started; mode=%s%s  (capacity %d)")
+            :format(fullMode and "sell-when-full" or "sell-always",
+                    fullMode and (" threshold="..threshold()) or "", maxCap()))
+        while active() do
+            local fc = fruitCount()
+            local doSell = fullMode and (fc >= threshold()) or ((not fullMode) and fc > 0)
+            if doSell then
+                pcall(function() P_Sell:Fire() end)
+                dbg(("sold (fruit was %d/%d)"):format(fc, maxCap()))
+                task.wait(0.6)   -- let FruitCount reset before re-checking
+            end
+            for _=1, math.max(1, C.CheckInterval or 3) do if not active() then return end task.wait(1) end
+        end
+        print("[SELL] stopped.")
+    end
+
+    local function runSeedGrab(C)
+        local function active() return alive() and Cfg.SeedGrab ~= false end
+        local function dbg(...) if C.Debug then print("[SEEDGRAB]", ...) end end
+        local function getRoot() local c=lp.Character; if not c then return nil end return c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso"), c end
+        local function teleportTo(pos) local _,c=getRoot(); if not c then return end pcall(function() c:PivotTo(CFrame.new(pos+Vector3.new(0, C.YOffset, 0))) end) end
+        local function spawnInfo(part)
+            if part:GetAttribute("RainbowSeed")==true then return "Rainbow Seed","rainbow" end
+            if part:GetAttribute("GoldSeed")==true then return "Gold Seed","gold" end
+            local sp=part:GetAttribute("SeedPack")
+            if type(sp)=="string" and sp~="" then
+                local low=sp:lower()
+                if low:find("rainbow") then return sp,"rainbow" end  -- treat a rainbow-named pack as rainbow
+                if low:find("gold")    then return sp,"gold"    end  -- treat a gold-named pack as gold
+                return sp,"pack"
+            end
+            return nil,nil
+        end
+        local function wanted(k) if k=="rainbow" then return C.GrabRainbow elseif k=="gold" then return C.GrabGold elseif k=="pack" then return C.GrabAllSeedPacks end return false end
+        local function spawnPos(part) if part:IsA("BasePart") then return part.Position end local ok,cf=pcall(function() return part:GetPivot() end); if ok then return cf.Position end end
+        local claiming={}
+        local function claimSpawn(part)
+            if claiming[part] or not (part and part.Parent) then return end
+            claiming[part]=true
+            local name,kind=spawnInfo(part)
+            if not name then local dl=os.clock()+1.5 repeat task.wait(0.1); name,kind=spawnInfo(part) until name or os.clock()>dl or not part.Parent end
+            if not (part.Parent and name) then claiming[part]=nil return end
+            if not wanted(kind) then dbg("skip (filtered):", name); claiming[part]=nil return end
+            local pos=spawnPos(part)
+            if not pos or pos.Magnitude<1 then local dl=os.clock()+1.5 repeat task.wait(0.1); pos=spawnPos(part) until (pos and pos.Magnitude>=1) or os.clock()>dl or not part.Parent end
+            if not (part.Parent and pos) then claiming[part]=nil return end
+            print(("[SEEDGRAB] *** %s SPAWNED *** at %s - teleporting to claim"):format(name, tostring(pos)))
+            local _,char=getRoot(); local startCF=char and char:GetPivot()
+            local t0=os.clock()
+            while active() and part.Parent and (os.clock()-t0)<C.ClaimTimeout do
+                teleportTo(spawnPos(part) or pos)
+                for _,d in ipairs(part:GetDescendants()) do
+                    if d:IsA("ProximityPrompt") and typeof(fireproximityprompt)=="function" then pcall(function() fireproximityprompt(d) end)
+                    elseif d:IsA("ClickDetector") and typeof(fireclickdetector)=="function" then pcall(function() fireclickdetector(d) end) end
+                end
+                task.wait(C.LoopGap)
+            end
+            if not part.Parent then print(("[SEEDGRAB] claimed %s"):format(name)) else dbg("claim timeout:", name) end
+            if C.ReturnAfter and startCF then local _,ch=getRoot(); if ch then pcall(function() ch:PivotTo(startCF) end) end end
+            claiming[part]=nil
+        end
+        local map=workspace:WaitForChild("Map",30)
+        local sl=map and map:FindFirstChild("SeedPackSpawnServerLocations")
+        if not sl then warn("[SEEDGRAB] SeedPackSpawnServerLocations not found - seed-grab aborting") return end
+        local function scanNow() for _,c in ipairs(sl:GetChildren()) do if active() then task.spawn(claimSpawn,c) end end end
+        sl.ChildAdded:Connect(function(c) if active() then task.spawn(claimSpawn,c) end end)
+        pcall(function()
+            local Net=require(RS.SharedModules.Networking); local sp=Net and Net.SeedPackSpawn
+            if sp then
+                if sp.Announce then sp.Announce.OnClientEvent:Connect(function() if active() then scanNow() end end) end
+                if sp.FX then sp.FX.OnClientEvent:Connect(function() if active() then scanNow() end end) end
+            end
+        end)
+        task.spawn(function() while active() do scanNow(); task.wait(1) end end)
+        scanNow()
+        if C.AntiAfk then
+            local okVIM,VIM=pcall(function() return game:GetService("VirtualInputManager") end)
+            local function jump()
+                if next(claiming) then return end
+                if okVIM and VIM then pcall(function() VIM:SendKeyEvent(true,Enum.KeyCode.Space,false,game); task.wait(0.06); VIM:SendKeyEvent(false,Enum.KeyCode.Space,false,game) end)
+                else local _,c=getRoot(); local h=c and c:FindFirstChildOfClass("Humanoid"); if h then pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end end
+            end
+            lp.Idled:Connect(function() if active() then jump() end end)
+            task.spawn(function() while active() do for _=1,math.max(5,C.AntiAfkInterval) do if not active() then return end task.wait(1) end jump() end end)
+            print(("[SEEDGRAB] anti-afk armed (JUMP only, every %ds; VIM=%s)"):format(C.AntiAfkInterval, tostring(okVIM and VIM~=nil)))
+        end
+        print(("[SEEDGRAB] started (rainbow=%s gold=%s allPacks=%s)"):format(tostring(C.GrabRainbow), tostring(C.GrabGold), tostring(C.GrabAllSeedPacks)))
+    end
+
+    local function runMail(C)
+        local function mail_active() return alive() and Cfg.Mail ~= false end
+        local RECIPIENT_USERNAME=C.TargetUsername; local RECIPIENT_USERID=C.TargetUserId
+        local MESSAGE=C.MessageMail; local LIST_ITEM=C.ListItem
+        local MAX_PER_ITEM=(C.MaxPerItem and C.MaxPerItem>0) and C.MaxPerItem or math.huge
+        local DRY_RUN=C.DryRun; local SEND_DEBOUNCE=C.SendDebounce; local MAX_ITEMS_PER_GIFT=C.MaxItemsPerGift
+        local SEND_WHEN_COUNT=C.SendWhenCount; local SEND_AMOUNT=C.SendAmount; local WATCH_INTERVAL=C.WatchInterval
+        local INCLUDE_FRUITS=false
+        local ReplicaClient=require(RS.ClientModules.ReplicaClient)
+        print(string.rep("=",56)); print("GAG2 Auto Send Mail"..(DRY_RUN and "  [DRY RUN]" or "  [LIVE]")); print(string.rep("=",56))
+        local PER_INSTANCE={ Pets=true, HarvestedFruits=true }
+        local GIFTABLE={"Seeds","SeedPacks","Crates","Sprinklers","WateringCans","Mushrooms","Gnomes","Raccoons","Trowels","Props","Pets","HarvestedFruits"}
+        local function normName(s) s=tostring(s):lower():gsub("^%s+",""):gsub("%s+$",""); s=s:gsub("%s*seed$",""); return s end
+        local CAT_ALIAS={seed="Seeds",seeds="Seeds",fruit="HarvestedFruits",fruits="HarvestedFruits",harvestedfruit="HarvestedFruits",harvestedfruits="HarvestedFruits",pet="Pets",pets="Pets",crate="Crates",crates="Crates",pack="SeedPacks",packs="SeedPacks",seedpack="SeedPacks",seedpacks="SeedPacks",sprinkler="Sprinklers",sprinklers="Sprinklers",can="WateringCans",cans="WateringCans",wateringcan="WateringCans",wateringcans="WateringCans",mushroom="Mushrooms",mushrooms="Mushrooms",gnome="Gnomes",gnomes="Gnomes",raccoon="Raccoons",raccoons="Raccoons",trowel="Trowels",trowels="Trowels",prop="Props",props="Props"}
+        local function parseNameList(str)
+            local anyN,catN,n={},{},0
+            for token in tostring(str):gmatch("[^,]+") do
+                token=token:gsub("^%s+",""):gsub("%s+$","")
+                local catRaw,nameRaw=token:match("^([%a]+)%s*:%s*(.+)$")
+                if catRaw and nameRaw then local cat=CAT_ALIAS[catRaw:lower()]; local nm=normName(nameRaw); if cat and nm~="" then catN[cat]=catN[cat] or {}; catN[cat][nm]=true; n=n+1 end
+                else local nm=normName(token); if nm~="" then anyN[nm]=true; n=n+1 end end
+            end
+            return anyN,catN,n
+        end
+        local NAME_SET,CAT_NAME_SET,NAME_COUNT=parseNameList(LIST_ITEM)
+        local SEND_ALL=(LIST_ITEM:lower():gsub("%s","")=="*" or LIST_ITEM:lower():gsub("%s","")=="all")
+        local BLACKLIST={}; for _,nm in ipairs(C.Blacklist or {}) do BLACKLIST[normName(nm)]=true end
+        local function resolveRecipient()
+            if type(RECIPIENT_USERID)=="number" and RECIPIENT_USERID>0 then return RECIPIENT_USERID end
+            if type(RECIPIENT_USERNAME)~="string" or RECIPIENT_USERNAME=="" or RECIPIENT_USERNAME=="PutTargetUsernameHere" or RECIPIENT_USERNAME=="USERNAME" then
+                return nil, "set a real TargetUsername (placeholder rejected)" end
+            for _,pl in ipairs(Players:GetPlayers()) do if pl.Name:lower()==RECIPIENT_USERNAME:lower() or pl.DisplayName:lower()==RECIPIENT_USERNAME:lower() then return pl.UserId end end
+            local ok,info=pcall(function() return Packet("MailboxLookupPlayer"):Fire(RECIPIENT_USERNAME) end)
+            if ok and type(info)=="table" and (info.UserId or info.userId) then return info.UserId or info.userId end
+            if ok and type(info)=="number" and info>0 then return info end
+            local ok2,uid=pcall(function() return Players:GetUserIdFromNameAsync(RECIPIENT_USERNAME) end)
+            if ok2 and type(uid)=="number" then return uid end
+            return nil, "could not resolve '"..RECIPIENT_USERNAME.."'"
+        end
+        local function getInventory()
+            local ok,reg=pcall(ReplicaClient.Test); if not ok then return nil end
+            for _,rep in pairs(reg.Replicas or {}) do if rep.Token=="PlayerState" and rep.Data and rep.Data.Inventory then return rep.Data.Inventory end end
+        end
+        local function nameAllowed(category, displayName)
+            local nn=normName(displayName)
+            if BLACKLIST[nn] then return false end
+            local cset=CAT_NAME_SET[category]; if cset and cset[nn] then return true end
+            if category=="HarvestedFruits" and not INCLUDE_FRUITS then return false end
+            if SEND_ALL then return true end
+            return NAME_SET[nn]==true
+        end
+        local function buildItems(inv)
+            local items={}
+            for _,cat in ipairs(GIFTABLE) do
+                local t=inv[cat]
+                if type(t)=="table" then
+                    if PER_INSTANCE[cat] then
+                        local byName={}
+                        for key,val in pairs(t) do local nm=(type(val)=="table" and (val.Name or val.FruitName)) or tostring(key); if nameAllowed(cat,nm) then byName[nm]=byName[nm] or {}; table.insert(byName[nm],key) end end
+                        for nm,uids in pairs(byName) do local have=#uids; if have>=SEND_WHEN_COUNT then local toSend=(SEND_AMOUNT>0) and math.min(have,SEND_AMOUNT) or have; toSend=math.min(toSend,MAX_PER_ITEM); for i=1,toSend do table.insert(items,{Category=cat,ItemKey=uids[i],Count=1,_display=nm,_have=have}) end end end
+                    else
+                        for key,val in pairs(t) do local have=tonumber(val) or 0; if nameAllowed(cat,key) and have>=SEND_WHEN_COUNT then local sc=(SEND_AMOUNT>0) and math.min(have,SEND_AMOUNT) or have; sc=math.min(sc,MAX_PER_ITEM); if sc>0 then table.insert(items,{Category=cat,ItemKey=key,Count=sc,_display=key,_have=have}) end end end
+                    end
+                end
+            end
+            return items
+        end
+        local function chunk(list,size) local out,cur={},{} for _,v in ipairs(list) do table.insert(cur,v); if #cur>=size then table.insert(out,cur); cur={} end end if #cur>0 then table.insert(out,cur) end return out end
+        if SEND_ALL then print("[MAIL] filter: SEND ALL giftable items")
+        elseif NAME_COUNT>0 then print(("[MAIL] filter: by name (%d), fruits=%s"):format(NAME_COUNT, INCLUDE_FRUITS and "included" or "excluded"))
+        else warn("[MAIL] ListItem empty - nothing to do") return end
+        local userId,err1=resolveRecipient()
+        if not userId then warn("[MAIL] recipient error: "..tostring(err1)) return end
+        print(("[MAIL] recipient = %s (UserId %s); threshold=%d"):format(tostring(RECIPIENT_USERNAME), tostring(userId), SEND_WHEN_COUNT))
+        local function doSendPass()
+            local inv=getInventory(); if not inv then return 0 end
+            local items=buildItems(inv); if #items==0 then return 0 end
+            if DRY_RUN then
+                print(("[MAIL] DRY_RUN - would send %d stack(s) to %s:"):format(#items, tostring(RECIPIENT_USERNAME)))
+                for _,it in ipairs(items) do print(("    %s: %s x%d (you have %s)"):format(it.Category, tostring(it._display), it.Count, tostring(it._have))) end
+                return 0
+            end
+            local batches=chunk(items,MAX_ITEMS_PER_GIFT); local sent=0
+            for bi,batch in ipairs(batches) do
+                local clean={}; for _,it in ipairs(batch) do table.insert(clean,{Category=it.Category,ItemKey=it.ItemKey,Count=it.Count}) end
+                local ok=pcall(function() return Packet("MailboxSendBatch"):Fire(userId,clean,MESSAGE) end)
+                if ok then for _,it in ipairs(clean) do sent=sent+it.Count end print(("[MAIL] batch %d/%d sent (%d entries)"):format(bi,#batches,#clean)) end
+                if bi<#batches then task.wait(SEND_DEBOUNCE) end
+            end
+            return sent
+        end
+        print("[MAIL] watch started - auto-send when count >= "..SEND_WHEN_COUNT)
+        while mail_active() do
+            local ok,sent=pcall(doSendPass)
+            if ok and sent and sent>0 then task.wait(SEND_DEBOUNCE) end
+            task.wait(WATCH_INTERVAL)
+        end
+        print("[MAIL] watch stopped.")
+    end
+
+    print("========================================================")
+    print(("GAG2 ALL-IN-ONE  PlantBuy=%s Harvest=%s Sell=%s SeedGrab=%s Mail=%s")
+        :format(tostring(Cfg.PlantBuy), tostring(Cfg.Harvest), tostring(Cfg.Sell), tostring(Cfg.SeedGrab), tostring(Cfg.Mail)))
+    print("  Stop all: getgenv().__GAG2_ALL=false")
+    print("========================================================")
+
+    if Cfg.PlantBuy then task.spawn(function() local ok,err=pcall(runPlantBuy, Cfg.PlantBuyConfig or {}); if not ok then warn("[ALL] plant+buy crashed: "..tostring(err)) end end) end
+    if Cfg.Harvest  then task.spawn(function()
+        -- watchdog: if runHarvest ever exits abnormally (setup error, etc.) while it's
+        -- still supposed to run, restart it after a short backoff instead of dying.
+        while alive() and Cfg.Harvest ~= false do
+            local ok,err = pcall(runHarvest, Cfg.HarvestConfig or {})
+            if not ok then warn("[ALL] harvest crashed: "..tostring(err).." - restarting in 3s") end
+            if not (alive() and Cfg.Harvest ~= false) then break end
+            task.wait(3)
+        end
+    end) end
+    if Cfg.Sell     then task.spawn(function() local ok,err=pcall(runSell,     Cfg.SellConfig     or {}); if not ok then warn("[ALL] sell crashed: "..tostring(err)) end end) end
+    if Cfg.SeedGrab then task.spawn(function() local ok,err=pcall(runSeedGrab, Cfg.SeedGrabConfig or {}); if not ok then warn("[ALL] seed-grab crashed: "..tostring(err)) end end) end
+    if Cfg.Mail     then task.spawn(function() local ok,err=pcall(runMail,     Cfg.MailConfig     or {}); if not ok then warn("[ALL] mail crashed: "..tostring(err)) end end) end
