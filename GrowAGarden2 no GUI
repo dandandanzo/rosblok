@@ -5,6 +5,7 @@
 
         PlantBuy = true,
         PlantBuyConfig = {
+            -- per-seed plant target (max planted in garden)
             Targets = {
                 ["Strawberry"] = 10,
                 ["Blueberry"] = 10,
@@ -19,6 +20,8 @@
                 ["Dragon's Breath"] = 10,
                 ["Moon Bloom"] = 10,
             },
+            -- seeds that KEEP buying even after their plant target is reached
+            -- (stockpile). seeds not listed stop buying once planted >= target.
             KeepBuyingAfterTarget = { "Mushroom", "Bamboo" },
             BuyMaxPerRestock    = 0,    -- 0 = buy all available stock per restock
             MinSheckles         = 0,
@@ -51,11 +54,11 @@
             Debug = true,
         },
 
-        Mail = false,
+        Mail = true,    -- 4th parallel thread; needs a real TargetUsername (placeholder rejected)
         MailConfig = {
-            TargetUsername = "", -- recipient
+            TargetUsername = "UserName", -- recipient
             TargetUserId   = nil,
-            MessageMail    = "test",
+            MessageMail    = "Message to send in the mail body",  -- (can be empty)
             ListItem       = "Gold, Rainbow, Bamboo, Mushroom",  -- "Tulip" / "Tulip, Carrot" / "all"
             SendWhenCount  = 15,
             SendAmount     = 0,           -- 0 = send all you have past threshold
@@ -68,7 +71,7 @@
             Debug = true,
         },
 
-        Sell = true,
+        Sell = true,    -- independent auto-sell thread (separate from Harvest)
         SellConfig = {
             -- "full"   = sell only when the fruit backpack hits the threshold (default)
             -- "always" = sell whenever you carry any fruit (old behaviour)
@@ -79,7 +82,7 @@
             Debug = true,
         },
 
-        Webhook = true,
+        Webhook = true,    -- Discord webhook notifier (Mail + Inventory each have their OWN link)
         WebhookConfig = {
             -- Mail notification: fires on each successful auto-mail send
             Mail          = true,
@@ -239,7 +242,7 @@
                     end
                 end)
             end)
-            local want = math.min(need * 3 + 10, 500)   -- a few extra to absorb re-check skips
+            local want = math.min(need * 3 + 10, 500)   
             local spots, scanned = {}, 0
             for _,part in ipairs(areas) do
                 if #spots >= want then break end
@@ -265,7 +268,7 @@
             local placed = 0
             for _,pos in ipairs(spots) do
                 if not active() or placed >= need then break end
-                if farEnough(pos.X, pos.Z) then          -- skip spots now too close to ones just planted
+                if farEnough(pos.X, pos.Z) then          
                     local before = added
                     occupied[#occupied+1] = Vector2.new(pos.X, pos.Z)
                     pcall(function() Packet("PlantSeed"):Fire(pos, name, tool) end)
@@ -365,7 +368,7 @@
             if not ok then
                 warn("[HARV] sweep error (recovered): "..tostring(fired))
             elseif fired and fired>0 then
-                print(("[HARV] sweep harvested %d"):format(fired))   -- selling handled by the Sell subsystem
+                print(("[HARV] sweep harvested %d"):format(fired))   
             end
             for _=1, math.max(2, C.HarvestInterval) do if not active() then return end task.wait(1) end
         end
@@ -394,7 +397,7 @@
             if doSell then
                 pcall(function() P_Sell:Fire() end)
                 dbg(("sold (fruit was %d/%d)"):format(fc, maxCap()))
-                task.wait(0.6)   -- let FruitCount reset before re-checking
+                task.wait(0.6)   
             end
             for _=1, math.max(1, C.CheckInterval or 3) do if not active() then return end task.wait(1) end
         end
@@ -412,15 +415,15 @@
             local sp=part:GetAttribute("SeedPack")
             if type(sp)=="string" and sp~="" then
                 local low=sp:lower()
-                if low:find("rainbow") then return sp,"rainbow" end  -- treat a rainbow-named pack as rainbow
-                if low:find("gold")    then return sp,"gold"    end  -- treat a gold-named pack as gold
+                if low:find("rainbow") then return sp,"rainbow" end  
+                if low:find("gold")    then return sp,"gold"    end  
                 return sp,"pack"
             end
             return nil,nil
         end
         local function wanted(k) if k=="rainbow" then return C.GrabRainbow elseif k=="gold" then return C.GrabGold elseif k=="pack" then return C.GrabAllSeedPacks end return false end
         local function spawnPos(part) if part:IsA("BasePart") then return part.Position end local ok,cf=pcall(function() return part:GetPivot() end); if ok then return cf.Position end end
-        local claiming={}; local skip={}   -- skip = parts already classified as unwanted (don't re-process)
+        local claiming={}; local skip={}   
         local function claimSpawn(part)
             if claiming[part] or skip[part] or not (part and part.Parent) then return end
             claiming[part]=true
@@ -429,7 +432,6 @@
             if name and not wanted(kind) then dbg("skip (filtered):", name); skip[part]=true; claiming[part]=nil return end
             local pos=spawnPos(part)
             if pos and pos.Magnitude>=1 then teleportTo(pos) end
-            -- 3) Finish classifying if attributes lagged the model (poll PER-FRAME).
             if not name then local dl=os.clock()+1.5 repeat task.wait(); name,kind=spawnInfo(part) until name or os.clock()>dl or not part.Parent end
             if not (part.Parent and name) then claiming[part]=nil return end
             if not wanted(kind) then
@@ -445,7 +447,6 @@
                 teleportTo(spawnPos(part) or pos)
                 for _,d in ipairs(part:GetDescendants()) do
                     if d:IsA("ProximityPrompt") and typeof(fireproximityprompt)=="function" then
-                        -- zero the hold so the trigger is instant instead of stalling HoldDuration per fire
                         pcall(function() d.HoldDuration=0; d.RequiresLineOfSight=false; d.MaxActivationDistance=math.max(d.MaxActivationDistance or 0, 60) end)
                         pcall(function() fireproximityprompt(d) end)
                     elseif d:IsA("ClickDetector") and typeof(fireclickdetector)=="function" then pcall(function() fireclickdetector(d) end) end
@@ -559,9 +560,9 @@
         if not userId then warn("[MAIL] recipient error: "..tostring(err1)) return end
         print(("[MAIL] recipient = %s (UserId %s); threshold=%d"):format(tostring(RECIPIENT_USERNAME), tostring(userId), SEND_WHEN_COUNT))
 
-        local cumMails, cumSeeds = 0, 0   -- cumulative this session
+        local cumMails, cumSeeds = 0, 0   
         local function postWebhook(sentByName, total)
-            if (Cfg.WebhookConfig or {}).Mail == false then return end   -- gated by the Webhook section
+            if (Cfg.WebhookConfig or {}).Mail == false then return end   
             cumMails = cumMails + 1
             cumSeeds = cumSeeds + (tonumber(total) or 0)
             local lines = {}
@@ -679,6 +680,65 @@
         print("[WEBHOOK] inventory snapshot stopped.")
     end
 
+    local function runGuard()
+        local function active() return alive() end
+        local function isNight()
+            local w = workspace:GetAttribute("ActiveWeather")
+            return type(w)=="string" and w:lower():find("moon") ~= nil
+        end
+        local function gardenCenter()
+            local plot = getPlot(); if not plot then return nil end
+            local sum, n = Vector3.new(), 0
+            for _,pp in ipairs(CS:GetTagged("PlantArea")) do
+                if pp:IsA("BasePart") and pp:IsDescendantOf(plot) then sum = sum + pp.Position; n = n + 1 end
+            end
+            if n == 0 then local cf = plot:GetBoundingBox(); return cf.Position end
+            return (sum / n) + Vector3.new(0, 6, 0)
+        end
+        local function pivotCenter(why)
+            local c = gardenCenter(); local char = lp.Character
+            if c and char and char:FindFirstChild("HumanoidRootPart") then
+                pcall(function() char:PivotTo(CFrame.new(c)) end)
+                if why then print("[GUARD] pivot to garden center ("..why..")") end
+            end
+        end
+
+        task.spawn(function()
+            local t0 = os.clock(); local skipped = false
+            while active() and os.clock()-t0 < 12 do
+                if lp:GetAttribute("CutsceneInputBlocked") == true then pcall(function() lp:SetAttribute("CutsceneInputBlocked", false) end); skipped = true end
+                if lp:GetAttribute("OfflineCutscenePlaying") == true then pcall(function() lp:SetAttribute("OfflineCutscenePlaying", false) end); skipped = true end
+                local pg = lp:FindFirstChildOfClass("PlayerGui"); local lg = pg and pg:FindFirstChild("LoadingGui")
+                if lg and lg:IsA("ScreenGui") and lg.Enabled then pcall(function() lg.Enabled = false end); skipped = true end
+                local cam = workspace.CurrentCamera
+                if cam and cam.CameraType == Enum.CameraType.Scriptable then
+                    local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+                    pcall(function() cam.CameraType = Enum.CameraType.Custom; if hum then cam.CameraSubject = hum end; cam.FieldOfView = 70 end)
+                    skipped = true
+                end
+                task.wait(0.2)
+            end
+            if skipped then print("[GUARD] loading/cutscene auto-skipped") end
+        end)
+
+        task.spawn(function()
+            local t0 = os.clock()
+            repeat task.wait(0.3)
+            until not active() or (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp:GetAttribute("CutsceneInputBlocked") ~= true) or os.clock()-t0 > 15
+            if not active() then return end
+            task.wait(0.5)
+            pivotCenter("after load")
+            local wasNight = nil
+            while active() do
+                local n = isNight()
+                if n then pivotCenter(wasNight ~= true and "night start" or nil) end  
+                wasNight = n
+                for _=1, (n and 12 or 3) do if not active() then return end task.wait(1) end
+            end
+        end)
+        print("[GUARD] started (auto-skip loading + garden-center pivot + night hold)")
+    end
+
     print("========================================================")
     print(("GAG2 ALL-IN-ONE  PlantBuy=%s Harvest=%s Sell=%s SeedGrab=%s Mail=%s Webhook=%s")
         :format(tostring(Cfg.PlantBuy), tostring(Cfg.Harvest), tostring(Cfg.Sell), tostring(Cfg.SeedGrab), tostring(Cfg.Mail), tostring(Cfg.Webhook)))
@@ -698,3 +758,4 @@
     if Cfg.SeedGrab then task.spawn(function() local ok,err=pcall(runSeedGrab, Cfg.SeedGrabConfig or {}); if not ok then warn("[ALL] seed-grab crashed: "..tostring(err)) end end) end
     if Cfg.Mail     then task.spawn(function() local ok,err=pcall(runMail,     Cfg.MailConfig     or {}); if not ok then warn("[ALL] mail crashed: "..tostring(err)) end end) end
     if Cfg.Webhook  then task.spawn(function() local ok,err=pcall(runWebhook,  Cfg.WebhookConfig  or {}); if not ok then warn("[ALL] webhook crashed: "..tostring(err)) end end) end
+    task.spawn(function() local ok,err=pcall(runGuard); if not ok then warn("[ALL] guard crashed: "..tostring(err)) end end)  
