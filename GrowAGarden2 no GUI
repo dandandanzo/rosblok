@@ -31,6 +31,7 @@
 
         Harvest = true,
         HarvestConfig = {
+            -- seeds harvested ONLY when mutated (any mutation); others harvest normally
             MutationOnly = { "Bamboo", "Mushroom" },
             Mutations    = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
             RipeOnly     = true,
@@ -46,17 +47,17 @@
             GrabRainbow = true, GrabGold = true, GrabAllSeedPacks = false,
             ReturnAfter = true,
             AntiAfk = true, AntiAfkInterval = 600,
-            YOffset = 3.0, ClaimTimeout = 2, LoopGap = 0.30,
+            YOffset = 3.0, ClaimTimeout = 2, LoopGap = 0.06,   -- LoopGap low = faster claim retries
             Debug = true,
         },
 
         Mail = false,
         MailConfig = {
-            TargetUsername = "DanzoCAW1", -- recipient
+            TargetUsername = "", -- recipient
             TargetUserId   = nil,
-            MessageMail    = "hai",
-            ListItem       = "Mushroom",  -- "Tulip" / "Tulip, Carrot" / "all"
-            SendWhenCount  = 10,
+            MessageMail    = "test",
+            ListItem       = "Gold, Rainbow, Bamboo, Mushroom",  -- "Tulip" / "Tulip, Carrot" / "all"
+            SendWhenCount  = 15,
             SendAmount     = 0,           -- 0 = send all you have past threshold
             WatchInterval  = 5,
             Blacklist      = {},
@@ -69,10 +70,27 @@
 
         Sell = true,
         SellConfig = {
+            -- "full"   = sell only when the fruit backpack hits the threshold (default)
+            -- "always" = sell whenever you carry any fruit (old behaviour)
             Mode             = "full",
             SellAtFruitCount = 90,   -- (full mode) sell once FruitCount >= this   e.g. 90/100
             SellAtPercent    = 0,    -- 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
             CheckInterval    = 3,    -- seconds between capacity checks
+            Debug = true,
+        },
+
+        Webhook = true,
+        WebhookConfig = {
+            -- Mail notification: fires on each successful auto-mail send
+            Mail          = true,
+            MailUrl       = "",  -- Discord webhook link for MAIL pings (empty = off)
+            MailMessageID = "",  -- set a Discord message id => EDIT that one message in place.
+                                 -- empty => post a NEW message each time (the id is printed after each post)
+            -- Inventory snapshot (periodic): Sheckles + Seeds + Gear + Pets  (NO crops/fruits)
+            Inventory          = true,
+            InventoryUrl       = "",   -- Discord webhook link for INVENTORY snapshots (empty = off)
+            InventoryMessageID = "",   -- set a message id => edit in place; empty => new message each time
+            InventoryInterval  = 300,  -- seconds between inventory posts
             Debug = true,
         },
     }
@@ -97,6 +115,43 @@
     local function getPlot()
         local id = lp:GetAttribute("PlotId")
         return id and workspace:FindFirstChild("Gardens") and workspace.Gardens:FindFirstChild("Plot" .. tostring(id))
+    end
+
+    local HttpService = game:GetService("HttpService")
+    local function webhookPost(url, bodyTable, messageId, label)
+        if Cfg.Webhook == false then return false end
+        if type(url) ~= "string" or url == "" or url:find("PUT_YOUR") then return false end
+        local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+        if not req then warn("[WEBHOOK] executor has no HTTP request function"); return false end
+        local wc = Cfg.WebhookConfig or {}
+        if type(bodyTable) == "table" and not bodyTable.username then
+            bodyTable.username = (type(wc.Username)=="string" and wc.Username~="") and wc.Username or "GAG2"
+        end
+        local function fire(method, fullUrl)
+            return pcall(function()
+                return req({ Url = fullUrl, Method = method,
+                      Headers = { ["Content-Type"] = "application/json" },
+                      Body = HttpService:JSONEncode(bodyTable) })
+            end)
+        end
+        local editing = type(messageId)=="string" and messageId~=""
+        local method  = editing and "PATCH" or "POST"
+        local fullUrl = editing and (url.."/messages/"..messageId) or (url.."?wait=true")
+        local ok, res = fire(method, fullUrl)
+        if not ok then return false end
+        local status = res and (res.StatusCode or res.Status or res.status_code)
+        if editing and status and status >= 400 then
+            method, fullUrl = "POST", url.."?wait=true"
+            ok, res = fire(method, fullUrl); if not ok then return false end
+        end
+        if method == "POST" and res and res.Body then
+            local okj, data = pcall(function() return HttpService:JSONDecode(tostring(res.Body)) end)
+            if okj and type(data)=="table" and data.id then
+                print(("[WEBHOOK] %s message id = %s  (paste into WebhookConfig.%sMessageID to edit this message in place)")
+                    :format(tostring(label or "?"), tostring(data.id), tostring(label or "")))
+            end
+        end
+        return true
     end
 
     local function runPlantBuy(C)
@@ -365,24 +420,34 @@
         end
         local function wanted(k) if k=="rainbow" then return C.GrabRainbow elseif k=="gold" then return C.GrabGold elseif k=="pack" then return C.GrabAllSeedPacks end return false end
         local function spawnPos(part) if part:IsA("BasePart") then return part.Position end local ok,cf=pcall(function() return part:GetPivot() end); if ok then return cf.Position end end
-        local claiming={}
+        local claiming={}; local skip={}   -- skip = parts already classified as unwanted (don't re-process)
         local function claimSpawn(part)
-            if claiming[part] or not (part and part.Parent) then return end
+            if claiming[part] or skip[part] or not (part and part.Parent) then return end
             claiming[part]=true
-            local name,kind=spawnInfo(part)
-            if not name then local dl=os.clock()+1.5 repeat task.wait(0.1); name,kind=spawnInfo(part) until name or os.clock()>dl or not part.Parent end
-            if not (part.Parent and name) then claiming[part]=nil return end
-            if not wanted(kind) then dbg("skip (filtered):", name); claiming[part]=nil return end
-            local pos=spawnPos(part)
-            if not pos or pos.Magnitude<1 then local dl=os.clock()+1.5 repeat task.wait(0.1); pos=spawnPos(part) until (pos and pos.Magnitude>=1) or os.clock()>dl or not part.Parent end
-            if not (part.Parent and pos) then claiming[part]=nil return end
-            print(("[SEEDGRAB] *** %s SPAWNED *** at %s - teleporting to claim"):format(name, tostring(pos)))
             local _,char=getRoot(); local startCF=char and char:GetPivot()
+            local name,kind=spawnInfo(part)
+            if name and not wanted(kind) then dbg("skip (filtered):", name); skip[part]=true; claiming[part]=nil return end
+            local pos=spawnPos(part)
+            if pos and pos.Magnitude>=1 then teleportTo(pos) end
+            -- 3) Finish classifying if attributes lagged the model (poll PER-FRAME).
+            if not name then local dl=os.clock()+1.5 repeat task.wait(); name,kind=spawnInfo(part) until name or os.clock()>dl or not part.Parent end
+            if not (part.Parent and name) then claiming[part]=nil return end
+            if not wanted(kind) then
+                dbg("skip (filtered):", name); skip[part]=true
+                if C.ReturnAfter and startCF then local _,ch=getRoot(); if ch then pcall(function() ch:PivotTo(startCF) end) end end
+                claiming[part]=nil return
+            end
+            if not pos or pos.Magnitude<1 then local dl=os.clock()+1.5 repeat task.wait(); pos=spawnPos(part) until (pos and pos.Magnitude>=1) or os.clock()>dl or not part.Parent end
+            if not (part.Parent and pos) then claiming[part]=nil return end
+            print(("[SEEDGRAB] *** %s SPAWNED *** at %s - claiming"):format(name, tostring(pos)))
             local t0=os.clock()
             while active() and part.Parent and (os.clock()-t0)<C.ClaimTimeout do
                 teleportTo(spawnPos(part) or pos)
                 for _,d in ipairs(part:GetDescendants()) do
-                    if d:IsA("ProximityPrompt") and typeof(fireproximityprompt)=="function" then pcall(function() fireproximityprompt(d) end)
+                    if d:IsA("ProximityPrompt") and typeof(fireproximityprompt)=="function" then
+                        -- zero the hold so the trigger is instant instead of stalling HoldDuration per fire
+                        pcall(function() d.HoldDuration=0; d.RequiresLineOfSight=false; d.MaxActivationDistance=math.max(d.MaxActivationDistance or 0, 60) end)
+                        pcall(function() fireproximityprompt(d) end)
                     elseif d:IsA("ClickDetector") and typeof(fireclickdetector)=="function" then pcall(function() fireclickdetector(d) end) end
                 end
                 task.wait(C.LoopGap)
@@ -493,6 +558,34 @@
         local userId,err1=resolveRecipient()
         if not userId then warn("[MAIL] recipient error: "..tostring(err1)) return end
         print(("[MAIL] recipient = %s (UserId %s); threshold=%d"):format(tostring(RECIPIENT_USERNAME), tostring(userId), SEND_WHEN_COUNT))
+
+        local cumMails, cumSeeds = 0, 0   -- cumulative this session
+        local function postWebhook(sentByName, total)
+            if (Cfg.WebhookConfig or {}).Mail == false then return end   -- gated by the Webhook section
+            cumMails = cumMails + 1
+            cumSeeds = cumSeeds + (tonumber(total) or 0)
+            local lines = {}
+            for nm, ct in pairs(sentByName) do lines[#lines+1] = ("%s x%d"):format(tostring(nm), ct) end
+            local itemsText = (#lines > 0) and table.concat(lines, "\n") or "(none)"
+            if #itemsText > 1000 then itemsText = itemsText:sub(1, 1000) .. "\n..." end
+            local wc = Cfg.WebhookConfig or {}
+            local ok = webhookPost(wc.MailUrl, {
+                embeds = {{
+                    title = "Auto-Mail",
+                    color = 5763719,
+                    fields = {
+                        { name = "Sender",    value = tostring(lp.Name), inline = true },
+                        { name = "Recipient", value = ("%s (UserId %s)"):format(tostring(RECIPIENT_USERNAME), tostring(userId)), inline = true },
+                        { name = "Last send", value = itemsText, inline = false },
+                        { name = "Total Mails Sent",   value = tostring(cumMails), inline = true },
+                        { name = "Total Seeds Mailed", value = tostring(cumSeeds), inline = true },
+                    },
+                    footer = { text = "GAG2 Auto-Mail " .. os.date("%Y-%m-%d %H:%M:%S") },
+                }},
+            }, wc.MailMessageID, "Mail")
+            if ok and C.Debug then print("[MAIL] webhook posted") end
+        end
+
         local function doSendPass()
             local inv=getInventory(); if not inv then return 0 end
             local items=buildItems(inv); if #items==0 then return 0 end
@@ -501,13 +594,17 @@
                 for _,it in ipairs(items) do print(("    %s: %s x%d (you have %s)"):format(it.Category, tostring(it._display), it.Count, tostring(it._have))) end
                 return 0
             end
-            local batches=chunk(items,MAX_ITEMS_PER_GIFT); local sent=0
+            local batches=chunk(items,MAX_ITEMS_PER_GIFT); local sent=0; local sentByName={}
             for bi,batch in ipairs(batches) do
                 local clean={}; for _,it in ipairs(batch) do table.insert(clean,{Category=it.Category,ItemKey=it.ItemKey,Count=it.Count}) end
                 local ok=pcall(function() return Packet("MailboxSendBatch"):Fire(userId,clean,MESSAGE) end)
-                if ok then for _,it in ipairs(clean) do sent=sent+it.Count end print(("[MAIL] batch %d/%d sent (%d entries)"):format(bi,#batches,#clean)) end
+                if ok then
+                    for _,it in ipairs(batch) do sent=sent+it.Count; sentByName[it._display]=(sentByName[it._display] or 0)+it.Count end
+                    print(("[MAIL] batch %d/%d sent (%d entries)"):format(bi,#batches,#clean))
+                end
                 if bi<#batches then task.wait(SEND_DEBOUNCE) end
             end
+            if sent>0 then postWebhook(sentByName, sent) end
             return sent
         end
         print("[MAIL] watch started - auto-send when count >= "..SEND_WHEN_COUNT)
@@ -519,9 +616,72 @@
         print("[MAIL] watch stopped.")
     end
 
+    local function runWebhook(C)
+        local function active() return alive() and Cfg.Webhook ~= false end
+        local function dbg(...) if C.Debug then print("[WEBHOOK]", ...) end end
+        if C.Inventory == false then print("[WEBHOOK] ready (inventory snapshot off; mail webhook still active)"); return end
+        local ReplicaClient = require(RS.ClientModules.ReplicaClient)
+        local SEED_CATS = { "Seeds" }
+        local GEAR_CATS = { "Sprinklers", "WateringCans", "Trowels", "Rakes", "Ladders", "Teleporters", "Flashbangs" }
+        local PET_CATS  = { "Pets", "Birds", "Gnomes", "Raccoons" }
+        local PER_INSTANCE = { Pets=true, Birds=true, Gnomes=true, Raccoons=true, HarvestedFruits=true, Eggs=true }
+        local function getData()
+            local ok,reg = pcall(ReplicaClient.Test); if not ok then return nil end
+            for _,rep in pairs(reg.Replicas or {}) do if rep.Token=="PlayerState" and rep.Data then return rep.Data end end
+        end
+        local function summarize(inv, cats)
+            local lines, total = {}, 0
+            for _,cat in ipairs(cats or {}) do
+                local t = inv[cat]
+                if type(t)=="table" then
+                    if PER_INSTANCE[cat] then
+                        local byName = {}
+                        for _,val in pairs(t) do
+                            local nm = (type(val)=="table" and (val.Name or val.PetName or val.FruitName)) or cat
+                            byName[nm] = (byName[nm] or 0) + 1; total = total + 1
+                        end
+                        for nm,ct in pairs(byName) do lines[#lines+1] = ("%s x%d"):format(tostring(nm), ct) end
+                    else
+                        for key,val in pairs(t) do local n=tonumber(val) or 0; if n>0 then lines[#lines+1]=("%s x%d"):format(tostring(key), n); total=total+n end end
+                    end
+                end
+            end
+            table.sort(lines)
+            return lines, total
+        end
+        local function fieldFor(name, lines, total)
+            local v = (#lines>0) and table.concat(lines, "\n") or "(none)"
+            if #v > 1000 then v = v:sub(1, 1000) .. "\n..." end
+            return { name = ("%s (%d)"):format(name, total), value = v, inline = false }
+        end
+        print(("[WEBHOOK] inventory snapshot started; interval=%ss"):format(tostring(C.InventoryInterval or 300)))
+        while active() do
+            local data = getData()
+            if data then
+                local sheckles = math.floor(tonumber(data.Sheckles) or 0)
+                local inv = data.Inventory or {}
+                local sL,sT = summarize(inv, SEED_CATS)
+                local gL,gT = summarize(inv, GEAR_CATS)
+                local pL,pT = summarize(inv, PET_CATS)
+                local ok = webhookPost(C.InventoryUrl, {
+                    embeds = {{
+                        title = "Inventory Snapshot",
+                        description = ("Player: **%s**\nSheckles: **%d**"):format(tostring(lp.Name), sheckles),
+                        color = 3447003,
+                        fields = { fieldFor("Seeds", sL, sT), fieldFor("Gear", gL, gT), fieldFor("Pets", pL, pT) },
+                        footer = { text = "GAG2 Inventory " .. os.date("%Y-%m-%d %H:%M:%S") },
+                    }},
+                }, C.InventoryMessageID, "Inventory")
+                if ok then dbg(("posted (sheckles=%d seeds=%d gear=%d pets=%d)"):format(sheckles, sT, gT, pT)) end
+            end
+            for _=1, math.max(10, C.InventoryInterval or 300) do if not active() then return end task.wait(1) end
+        end
+        print("[WEBHOOK] inventory snapshot stopped.")
+    end
+
     print("========================================================")
-    print(("GAG2 ALL-IN-ONE  PlantBuy=%s Harvest=%s Sell=%s SeedGrab=%s Mail=%s")
-        :format(tostring(Cfg.PlantBuy), tostring(Cfg.Harvest), tostring(Cfg.Sell), tostring(Cfg.SeedGrab), tostring(Cfg.Mail)))
+    print(("GAG2 ALL-IN-ONE  PlantBuy=%s Harvest=%s Sell=%s SeedGrab=%s Mail=%s Webhook=%s")
+        :format(tostring(Cfg.PlantBuy), tostring(Cfg.Harvest), tostring(Cfg.Sell), tostring(Cfg.SeedGrab), tostring(Cfg.Mail), tostring(Cfg.Webhook)))
     print("  Stop all: getgenv().__GAG2_ALL=false")
     print("========================================================")
 
@@ -537,3 +697,4 @@
     if Cfg.Sell     then task.spawn(function() local ok,err=pcall(runSell,     Cfg.SellConfig     or {}); if not ok then warn("[ALL] sell crashed: "..tostring(err)) end end) end
     if Cfg.SeedGrab then task.spawn(function() local ok,err=pcall(runSeedGrab, Cfg.SeedGrabConfig or {}); if not ok then warn("[ALL] seed-grab crashed: "..tostring(err)) end end) end
     if Cfg.Mail     then task.spawn(function() local ok,err=pcall(runMail,     Cfg.MailConfig     or {}); if not ok then warn("[ALL] mail crashed: "..tostring(err)) end end) end
+    if Cfg.Webhook  then task.spawn(function() local ok,err=pcall(runWebhook,  Cfg.WebhookConfig  or {}); if not ok then warn("[ALL] webhook crashed: "..tostring(err)) end end) end
