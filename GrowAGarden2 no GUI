@@ -5,7 +5,6 @@
 
         PlantBuy = true,
         PlantBuyConfig = {
-            -- per-seed plant target (max planted in garden)
             Targets = {
                 ["Strawberry"] = 10,
                 ["Blueberry"] = 10,
@@ -20,8 +19,6 @@
                 ["Dragon's Breath"] = 10,
                 ["Moon Bloom"] = 10,
             },
-            -- seeds that KEEP buying even after their plant target is reached
-            -- (stockpile). seeds not listed stop buying once planted >= target.
             KeepBuyingAfterTarget = { "Mushroom", "Bamboo" },
             BuyMaxPerRestock    = 0,    -- 0 = buy all available stock per restock
             MinSheckles         = 0,
@@ -34,7 +31,6 @@
 
         Harvest = true,
         HarvestConfig = {
-            -- seeds harvested ONLY when mutated (any mutation); others harvest normally
             MutationOnly = { "Bamboo", "Mushroom" },
             Mutations    = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
             RipeOnly     = true,
@@ -54,7 +50,7 @@
             Debug = true,
         },
 
-        Mail = false,    -- 4th parallel thread; needs a real TargetUsername (placeholder rejected)
+        Mail = false,
         MailConfig = {
             TargetUsername = "DanzoCAW1", -- recipient
             TargetUserId   = nil,
@@ -71,10 +67,8 @@
             Debug = true,
         },
 
-        Sell = true,    -- independent auto-sell thread (separate from Harvest)
+        Sell = true,
         SellConfig = {
-            -- "full"   = sell only when the fruit backpack hits the threshold (default)
-            -- "always" = sell whenever you carry any fruit (old behaviour)
             Mode             = "full",
             SellAtFruitCount = 90,   -- (full mode) sell once FruitCount >= this   e.g. 90/100
             SellAtPercent    = 0,    -- 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
@@ -90,7 +84,6 @@
     local Packet  = require(RS.SharedModules.Packet)
 
     local G = (typeof(getgenv) == "function" and getgenv()) or _G
-    -- supersede any standalone predecessors so nothing double-runs
     G.__GAG2_PB = false; G.__GAG2_PLANT = false; G.__GAG2_BUY = false
     G.__GAG2_HARVEST = false; G.__GAG2_HS = false; G.__GAG2_HMUT = false
     G.__GAG2_SEEDGRAB = false; G.__GAG2_MAIL = false
@@ -191,11 +184,6 @@
                     end
                 end)
             end)
-            -- Collect candidate spots UP-FRONT in a normal loop (task.wait is safe here).
-            -- DO NOT use a coroutine.wrap generator that calls task.wait(): resuming it
-            -- manually returns task.wait's nil yield, which the consumer reads as
-            -- "exhausted" and bails after the first fully-occupied column -> planting
-            -- stalls in a thin strip and every other seed starves.
             local want = math.min(need * 3 + 10, 500)   -- a few extra to absorb re-check skips
             local spots, scanned = {}, 0
             for _,part in ipairs(areas) do
@@ -318,8 +306,6 @@
 
         print("[HARV] harvest started; mutation-only seeds: "..(#(C.MutationOnly or {})>0 and table.concat(C.MutationOnly,", ") or "(none)"))
         while active() do
-            -- per-sweep pcall: a transient error (instance destroyed mid-sweep during a
-            -- yield, remote hiccup, etc.) is logged and recovered, NEVER kills the thread.
             local ok,fired = pcall(sweep)
             if not ok then
                 warn("[HARV] sweep error (recovered): "..tostring(fired))
@@ -541,8 +527,6 @@
 
     if Cfg.PlantBuy then task.spawn(function() local ok,err=pcall(runPlantBuy, Cfg.PlantBuyConfig or {}); if not ok then warn("[ALL] plant+buy crashed: "..tostring(err)) end end) end
     if Cfg.Harvest  then task.spawn(function()
-        -- watchdog: if runHarvest ever exits abnormally (setup error, etc.) while it's
-        -- still supposed to run, restart it after a short backoff instead of dying.
         while alive() and Cfg.Harvest ~= false do
             local ok,err = pcall(runHarvest, Cfg.HarvestConfig or {})
             if not ok then warn("[ALL] harvest crashed: "..tostring(err).." - restarting in 3s") end
