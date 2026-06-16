@@ -1,29 +1,39 @@
     getgenv().Config = {
 
-        Plant = false,
+        Plant = true,
         PlantConfig = {
             Targets = {
-                ["Strawberry"] = 10,
-                ["Blueberry"] = 10,
-                ["Bamboo"] = 100,
-                ["Mushroom"] = 10,
-                ["Green Bean"] = 3, -- DO NOT DELETE THIS
-                ["Dragon Fruit"] = 5,
-                ["Poison Ivy"] = 5,
-                ["Venus Fly Trap"] = 5,
-                ["Pomegranate"] = 5,
-                ["Acorn"] = 5,
-                ["Cherry"] = 5,
-                ["Dragon's Breath"] = 5,
-                ["Moon Bloom"] = 5,
+                ["Carrot"] = 20,
+                ["Strawberry"] = 20,
+                ["Blueberry"] = 20,
+                ["Tomato"] = 20,
+                ["Apple"] = 20,
+                ["Bamboo"] = 200,
+                ["Corn"] = 20,
+                ["Cactus"] = 20,
+                ["Pineapple"] = 20,
+                ["Mushroom"] = 200,
+                ["Green Bean"] = 20,
+                ["Banana"] = 20,
+                ["Grape"] = 20,
+                ["Coconut"] = 20,
+                ["Mango"] = 20,
+                ["Dragon Fruit"] = 20,
+                ["Acorn"] = 10,
+                ["Cherry"] = 10,
+                ["Venus Fly Trap"] = 10,
+                ["Pomegranate"] = 10,
+                ["Poison Apple"] = 10,
+                ["Moon Bloom"] = 10,
+                ["Dragon's Breath"] = 10,
             },
             KeepBuyingAfterTarget = { "Mushroom", "Bamboo" },
         },
 
-        Harvest = false,
+        Harvest = true,
         HarvestConfig = {
             MutationOnly = { "Bamboo", "Mushroom" },
-            Mutations    = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
+            Mutations = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
         },
 
         CollectEventSeeds = true,
@@ -34,34 +44,36 @@
         Mail = false,   -- OFF (skipped). set true + a REAL TargetUsername to re-enable
         MailConfig = {
             TargetUsername = "UserName", -- recipient
-            TargetUserId   = nil,
-            MessageMail    = "Message to send in the mail body",  -- (can be empty)
-            ListItem       = "Gold, Rainbow, Bamboo, Mushroom",  -- "Tulip" / "Tulip, Carrot" / "all"
-            SendWhenCount  = 15,
-            SendAmount     = 0,           -- 0 = send all you have past threshold
-            Blacklist      = {},
-            MaxPerItem     = 0,
+            TargetUserId = nil,
+            MessageMail = "Message to send in the mail body",  -- (can be empty)
+            ListItem = "Gold, Rainbow, Bamboo, Mushroom",  -- "Tulip" / "Tulip, Carrot" / "all"
+            SendWhenCount = 15,
+            SendAmount = 0,           -- 0 = send all you have past threshold
+            Blacklist = {},
+            MaxPerItem = 0,
         },
 
-        Sell = false,    -- independent auto-sell thread (separate from Harvest)
+        Sell = true,    -- independent auto-sell thread (separate from Harvest)
         SellConfig = {
-            -- "full"   = sell only when the fruit backpack hits the threshold (default)
-            -- "always" = sell whenever you carry any fruit (old behaviour)
-            Mode             = "full",
+            -- "full"  = sell the instant the fruit backpack hits the threshold (event-driven)
+            -- "always"= sell whenever you carry any fruit
+            -- "delay" = sell every SellDelay seconds on a timer
+            Mode = "full",
             SellAtFruitCount = 90,   -- (full mode) sell once FruitCount >= this   e.g. 90/100
-            SellAtPercent    = 0,    -- 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
+            SellAtPercent = 0,    -- (full mode) 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
+            SellDelay = 30,   -- (delay mode) seconds between sells
         },
 
-        Webhook = false,    -- Discord webhook notifier (Mail + Inventory each have their OWN link)
+        Webhook = false,    -- Discord webhook notifier (Mail + Stats each have their OWN link)
         WebhookConfig = {
-            Mail          = true,
-            MailUrl       = "",  -- Discord webhook link for MAIL pings (empty = off)
+            Mail = true,
+            MailUrl = "",  -- Discord webhook link for MAIL pings (empty = off)
             MailMessageID = "",  -- set a Discord message id => EDIT that one message in place.
                                  -- empty => post a NEW message each time (the id is printed after each post)
-            Inventory          = true,
-            InventoryUrl       = "",   -- Discord webhook link for INVENTORY snapshots (empty = off)
-            InventoryMessageID = "",   -- set a message id => edit in place; empty => new message each time
-            InventoryInterval  = 300,  -- seconds between inventory posts
+            Stats = true,   -- post a live STATS snapshot (same content as the Stats GUI)
+            StatsUrl = "",     -- Discord webhook link for STATS snapshots (empty = off)
+            StatsMessageID = "",     -- set a message id => edit in place; empty => new message each time
+            StatsInterval = 300,    -- seconds between stats posts
         },
 
         BuyGears = false,   -- auto-buy gears from the Gear Shop (buys ALL stock of each listed)
@@ -70,10 +82,10 @@
             Rarities = {},          -- also buy ALL stock of any in-stock gear of these rarities
         },
 
-        BuyPets = false,    -- auto-tame wild pets (Map.WildPetRef); costs the pet's Price in Sheckles
+        BuyPets = true,    -- auto-tame wild pets (Map.WildPetRef); costs the pet's Price in Sheckles
         BuyPetsConfig = {
             ListPets = {},          -- {} = ALL species  e.g. { "Owl", "BlackDragon" }
-            Rarities = {},          -- {} = ALL rarities e.g. { "Legendary" }
+            Rarities = {"Legendary", "Mythic"},          -- {} = ALL rarities e.g. { "Legendary" }
         },
 
         ExpandPlot = false, -- auto-expand garden while affordable (1M / 40M / 200M for #3/4/5)
@@ -86,20 +98,22 @@
             TargetSlots = 6,        -- raise MaxEquippedPets to this (base 3, hard max 6)
         },
 
-        EquipPets = false,  -- keep a configured pet loadout equipped (unequips anything not listed)
+        EquipPets = true,  -- keep a configured pet loadout equipped (unequips anything not listed)
         EquipPetsConfig = {
-            ListEquip = { "Owl", "Frog" },  -- species to keep equipped (repeat a name = 2 of it)
-            EquipRarities = {},             -- also equip ANY owned pet of these rarities (fills leftover slots)
+            ListEquip = {},  -- species to keep equipped (repeat a name = 2 of it)
+            EquipRarities = {"Legendary"},             -- also equip ANY owned pet of these rarities (fills leftover slots)
                                             --   rarities: Common, Uncommon, Rare, Super, Legendary, Mythic
         },
 
         Misc = true,    -- misc client-side helpers (fps boost / anti-afk / auto-reconnect / redeem codes)
         MiscConfig = {
             FpsBoost = true,
-            AntiAfk         = true,   -- anti-idle: auto-jump so Roblox won't kick you for being AFK
+            SetFPS = 0,             -- FPS cap via setfpscap. 0 = disabled (leave your FPS untouched); e.g. 60 caps at 60
+            StatsGUI = true,          -- on-screen live stats panel (username / sheckles+rate / weather / inventory / equipped pets / planted vs target)
+            AntiAfk = true,   -- anti-idle: auto-jump so Roblox won't kick you for being AFK
             AutoReconnect = true,     -- rejoin automatically if you get disconnected / kicked
             RedeemCodes = false,      -- redeem the codes below once on start (Net.Settings.SubmitCode)
-            ListCodes   = { "abc", "def" },
+            ListCodes = { "abc", "def" },
             Debug = true,   -- ONE debug switch for ALL subsystems (true = verbose, false = quiet)
         },
     }
@@ -227,20 +241,28 @@
             return (plantedCount(n) + invCount(n)) < t
         end
 
+        -- MEASURED: PurchaseSeed is NOT rate-limited (10 fired in one frame -> all 10 landed). So fire
+        -- the whole affordable/in-stock batch at ONCE, then verify and re-fire any shortfall. Far
+        -- faster than the old one-at-a-time confirm (which waited up to 1.5s PER seed).
         local function buySeed(name, cap)
             local price = PRICE[name] or 0
-            local bought = 0
-            while active() do
-                if cap and cap>0 and bought>=cap then break end
-                if stockRemaining(name) <= 0 then break end
-                if sheckles() < price then break end
-                local before = purchasedCount(name)
-                pcall(function() P_Buy:Fire(name) end)
-                local t0=os.clock()
-                repeat task.wait(0.1) until purchasedCount(name)>before or not active() or os.clock()-t0>1.5
-                if purchasedCount(name)>before then bought=bought+1 else break end
+            local start = purchasedCount(name)
+            local function canBuy()
+                local n = stockRemaining(name)
+                if cap and cap>0 then n = math.min(n, cap-(purchasedCount(name)-start)) end
+                if price>0 then n = math.min(n, math.floor(sheckles()/price)) end
+                return math.max(0, n)
             end
-            return bought
+            for _=1,5 do
+                if not active() then break end
+                local n = canBuy(); if n<=0 then break end
+                local before = purchasedCount(name)
+                for _=1,n do pcall(function() P_Buy:Fire(name) end) end          -- whole batch in one burst
+                local t0=os.clock()
+                repeat task.wait(0.1) until purchasedCount(name)>=before+n or not active() or os.clock()-t0>2
+                if purchasedCount(name)<=before then break end                    -- nothing landed -> stop
+            end
+            return purchasedCount(name)-start
         end
 
         local function plantTopUp(name, target)
@@ -271,45 +293,55 @@
                     end
                 end)
             end)
-            local CAP = math.min(need * 4 + 30, 2000)   -- only scan roughly what we still need
-            local spots, scanned = {}, 0
-            for _,part in ipairs(areas) do
-                if #spots >= CAP then break end
-                local hx,hz = part.Size.X/2-1, part.Size.Z/2-1
-                local lx = -hx + math.random()*1.2   -- random phase (avoid corner bias when capped)
-                while lx <= hx do
-                    local lz = -hz + math.random()*1.2
-                    while lz <= hz do
-                        local wp = (part.CFrame*CFrame.new(lx, part.Size.Y/2+0.2, lz)).Position
-                        if farEnough(wp.X, wp.Z) then
-                            local hit = workspace:Raycast(wp+Vector3.new(0,5,0), Vector3.new(0,-20,0), rp)
-                            if hit then spots[#spots+1] = hit.Position; if #spots >= CAP then break end end
-                        end
-                        scanned = scanned + 1
-                        if scanned % 200 == 0 then task.wait() end
-                        lz = lz + 1.2
-                    end
-                    if #spots >= CAP then break end
-                    lx = lx + 1.2
+            -- RANDOM sampling across all plant areas (weighted by surface size) instead of a regular
+            -- grid. A grid lays candidates in straight rows so a small batch ends up on one line/edge
+            -- of the plot ("garis"). Uniform random points (each kept >=1.2 apart via the hash)
+            -- scatter the batch across the whole garden.
+            local totalW = 0
+            for _,part in ipairs(areas) do totalW = totalW + math.max(1, part.Size.X * part.Size.Z) end
+            local function pickArea()
+                local r = math.random() * totalW
+                for _,part in ipairs(areas) do r = r - math.max(1, part.Size.X * part.Size.Z); if r <= 0 then return part end end
+                return areas[#areas]
+            end
+            local want = math.min(need * 3 + 12, 2000)   -- collect a spaced buffer, then plant `need`
+            local spots = {}
+            local attempts, maxAttempts = 0, want * 30
+            while #spots < want and attempts < maxAttempts do
+                attempts = attempts + 1
+                if attempts % 200 == 0 then task.wait() end
+                local part = pickArea()
+                local hx = math.max(0.1, part.Size.X/2 - 0.6)
+                local hz = math.max(0.1, part.Size.Z/2 - 0.6)
+                local lx = (math.random()*2 - 1) * hx
+                local lz = (math.random()*2 - 1) * hz
+                local wp = (part.CFrame * CFrame.new(lx, part.Size.Y/2 + 0.2, lz)).Position
+                if farEnough(wp.X, wp.Z) then
+                    local hit = workspace:Raycast(wp + Vector3.new(0,5,0), Vector3.new(0,-20,0), rp)
+                    if hit then spots[#spots+1] = hit.Position; hAdd(hash, hit.Position.X, hit.Position.Z) end
                 end
             end
-            for i = #spots, 2, -1 do local j = math.random(i); spots[i], spots[j] = spots[j], spots[i] end  -- shuffle
             if #spots == 0 then dbg(("no free spot for %s (garden full at spacing %.2f)"):format(name, 1.2)) end
-            local placed = 0
-            for _,pos in ipairs(spots) do
-                if not active() or placed >= need then break end
-                if farEnough(pos.X, pos.Z) then          
-                    local before = added
-                    hAdd(hash, pos.X, pos.Z)
-                    pcall(function() Packet("PlantSeed"):Fire(pos, name, tool) end)
-                    local t0 = os.clock()
-                    repeat task.wait(0.1) until added>before or not active() or os.clock()-t0>1.5
-                    if added>before then placed=placed+1 end
-                    task.wait(0.25)
+            -- MEASURED: PlantSeed IS rate-limited ~1/tick (8 fired in one frame -> 1 landed; ~0.05s
+            -- pace -> ~full). So pace at 0.05s like harvest instead of confirm-per-plant + a 0.25s pad
+            -- (old path was ~3/s; this is ~20/s). `added` (ChildAdded) counts the real plants; the
+            -- multi-pass loop refills the few drops from the spare spots so we still reach `need`
+            -- without waiting for the next whole cycle. Fires are capped at the shortfall = no overplant.
+            local PLANT_DELAY = 0.05
+            local si = 1
+            for _=1,3 do
+                if not active() then break end
+                local short = need - added; if short<=0 then break end
+                local fired = 0
+                while si<=#spots and fired<short and active() do
+                    pcall(function() Packet("PlantSeed"):Fire(spots[si], name, tool) end)
+                    si=si+1; fired=fired+1; task.wait(PLANT_DELAY)
                 end
+                if fired==0 then break end                                  -- out of spots
+                local t0=os.clock(); repeat task.wait(0.05) until added>=need or os.clock()-t0>1   -- let ChildAdded catch up
             end
             conn:Disconnect()
-            return placed
+            return added
         end
 
         do local n={} for k,v in pairs(C.Targets) do n[#n+1]=k.."="..tostring(v) end
@@ -323,7 +355,7 @@
                 if wantPlant(name, target) then local p=plantTopUp(name, target); if p>0 then print(("[PB] planted %s x%d (now %d/%d)"):format(name,p,plantedCount(name),target)) end
                 else dbg(("%s target met (%d/%d) - plant stopped%s"):format(name, plantedCount(name), target, KEEPBUY[name] and ", still buying" or ", buy stopped")) end
             end
-            for _=1, math.max(3, 20) do if not active() then return end task.wait(1) end
+            for _=1, math.max(3, 5) do if not active() then return end task.wait(1) end   -- Plant cycle every 5s
         end
         print("[PB] stopped.")
     end
@@ -349,6 +381,13 @@
             for _,p in ipairs(g:GetChildren()) do if p:GetAttribute("OwnerUserId")==lp.UserId then _plot=p; return p end end
         end
         local last_fire={}; local FIRE_CD=2.0
+        -- MEASURED on the live server: CollectFruit is rate-limited to ~18-20 accepted/sec. Firing
+        -- faster just gets the extras DROPPED (80 in one frame -> 1 landed; ~24/s -> only ~76% landed)
+        -- which is exactly why bursting / no-wait was SLOWER. 0.05s (=20/s) sits right at that ceiling:
+        -- ~full landing and ~1.6x faster than the old 0.08 (12.5/s). This is a SERVER wall - higher FPS
+        -- does not help past it. (FireDelay overridable; set 0 for one-per-frame.)
+        local FIRE_DELAY = (C.FireDelay ~= nil) and tonumber(C.FireDelay) or 0.05
+        local function pace() if FIRE_DELAY>0 then task.wait(FIRE_DELAY) else task.wait() end end
 
         local function sweep()
             local plot=myPlot(); if not plot then return 0 end
@@ -370,7 +409,7 @@
                             now=tick(); local cdOk=(not last_fire[fruitId]) or (now-last_fire[fruitId]>=FIRE_CD)
                             if plantId and ripeOk and cdOk then
                                 pcall(function() P_Collect:Fire(plantId, fruitId) end)
-                                last_fire[fruitId]=now; fired=fired+1; task.wait(0.08)
+                                last_fire[fruitId]=now; fired=fired+1; pace()
                                 if fired>=400 then break end
                             end
                         end
@@ -383,7 +422,7 @@
                         now=tick(); local cdOk=(not last_fire[plantId]) or (now-last_fire[plantId]>=FIRE_CD)
                         if plantId and ready and cdOk then
                             pcall(function() P_Collect:Fire(plantId, "") end)
-                            last_fire[plantId]=now; fired=fired+1; task.wait(0.08)
+                            last_fire[plantId]=now; fired=fired+1; pace()
                         end
                     end
                 end
@@ -400,9 +439,10 @@
             elseif fired and fired>0 then
                 print(("[HARV] sweep harvested %d"):format(fired))
             end
-            -- NONSTOP (always on): re-sweep immediately when fruit was harvested; a tiny
-            -- breather only when nothing was ripe, so an empty garden isn't scanned every frame.
-            if fired and fired>0 then task.wait() else task.wait(0.5) end
+            -- NONSTOP-ish: re-sweep fast when fruit was harvested, but with a small floor so the
+            -- garden isn't fully scanned EVERY frame (that was a real CPU spike); longer breather
+            -- when nothing was ripe.
+            if fired and fired>0 then task.wait(0.1) else task.wait(0.5) end
         end
         print("[HARV] stopped.")
     end
@@ -413,12 +453,25 @@
         local P_Sell = Packet("SellAll")
         local function fruitCount() return tonumber(lp:GetAttribute("FruitCount")) or 0 end
         local function maxCap()     return tonumber(lp:GetAttribute("MaxFruitCapacity")) or 100 end
-        local fullMode = (tostring(C.Mode or "full"):lower() ~= "always")
+        local mode = tostring(C.Mode or "full"):lower()
+        local fullMode = (mode ~= "always")
         local function threshold()
             if C.SellAtPercent and C.SellAtPercent > 0 then
                 return math.max(1, math.floor(maxCap() * math.clamp(C.SellAtPercent, 0, 1) + 0.5))
             end
             return tonumber(C.SellAtFruitCount) or 90
+        end
+        -- DELAY mode: sell on a fixed timer (regardless of fruit count)
+        if mode == "delay" then
+            local d = math.max(1, tonumber(C.SellDelay) or 30)
+            print(("[SELL] started; mode=delay (every %ds, capacity %d)"):format(d, maxCap()))
+            while active() do
+                local fc = fruitCount()
+                if fc > 0 then pcall(function() P_Sell:Fire() end); dbg(("sold on delay (fruit was %d/%d)"):format(fc, maxCap())) end
+                for _=1, d do if not active() then return end task.wait(1) end
+            end
+            print("[SELL] stopped.")
+            return
         end
         print(("[SELL] started; mode=%s%s  (capacity %d)")
             :format(fullMode and "sell-when-full" or "sell-always",
@@ -494,15 +547,32 @@
             if not (part.Parent and pos) then claiming[part]=nil return end
             print(("[SEEDGRAB] *** %s SPAWNED *** at %s - claiming"):format(name, tostring(pos)))
             local t0=os.clock()
-            while active() and part.Parent and (os.clock()-t0)<2 do
+            local loggedKinds=false
+            while active() and part.Parent and (os.clock()-t0)<3 do
                 grabUntil = os.clock() + 0.5   -- anchor-float during the grab (true anti-fall)
                 teleportTo(spawnPos(part) or pos)
+                local r=getRoot()
+                local nP,nC,nT=0,0,0
                 for _,d in ipairs(part:GetDescendants()) do
-                    if d:IsA("ProximityPrompt") and typeof(fireproximityprompt)=="function" then
-                        pcall(function() d.HoldDuration=0; d.RequiresLineOfSight=false; d.MaxActivationDistance=math.max(d.MaxActivationDistance or 0, 60) end)
-                        pcall(function() fireproximityprompt(d) end)
-                    elseif d:IsA("ClickDetector") and typeof(fireclickdetector)=="function" then pcall(function() fireclickdetector(d) end) end
+                    if d:IsA("ProximityPrompt") then
+                        nP=nP+1
+                        if typeof(fireproximityprompt)=="function" then
+                            pcall(function() d.Enabled=true; d.HoldDuration=0; d.RequiresLineOfSight=false; d.MaxActivationDistance=math.max(d.MaxActivationDistance or 0, 60) end)
+                            pcall(function() fireproximityprompt(d) end)
+                        end
+                    elseif d:IsA("ClickDetector") then
+                        nC=nC+1
+                        if typeof(fireclickdetector)=="function" then pcall(function() fireclickdetector(d) end) end
+                    elseif d:IsA("BasePart") and r and typeof(firetouchinterest)=="function" then
+                        nT=nT+1
+                        pcall(function() firetouchinterest(r, d, 0); firetouchinterest(r, d, 1) end)   -- touch-pickup seeds
+                    end
                 end
+                -- some seeds are claimed by touching the spawn part itself, not a child prompt
+                if part:IsA("BasePart") and r and typeof(firetouchinterest)=="function" then
+                    pcall(function() firetouchinterest(r, part, 0); firetouchinterest(r, part, 1) end)
+                end
+                if not loggedKinds then dbg(("claim interactables for %s: prompts=%d clickdetectors=%d parts=%d"):format(tostring(name), nP, nC, nT)); loggedKinds=true end
                 task.wait(0.06)
             end
             if not part.Parent then print(("[SEEDGRAB] claimed %s"):format(name)) else dbg("claim timeout:", name) end
@@ -659,7 +729,7 @@
     local function runWebhook(C)
         local function active() return alive() and Cfg.Webhook ~= false end
         local function dbg(...) if miscDebug() then print("[WEBHOOK]", ...) end end
-        if C.Inventory == false then print("[WEBHOOK] ready (inventory snapshot off; mail webhook still active)"); return end
+        if C.Stats == false then print("[WEBHOOK] ready (stats snapshot off; mail webhook still active)"); return end
         local ReplicaClient = require(RS.ClientModules.ReplicaClient)
         local SEED_CATS = { "Seeds" }
         local GEAR_CATS = { "Sprinklers", "WateringCans", "Trowels", "Rakes", "Ladders", "Teleporters", "Flashbangs" }
@@ -689,34 +759,72 @@
             table.sort(lines)
             return lines, total
         end
+        local function equippedList(data)
+            local pets = data and data.Inventory and data.Inventory.Pets
+            local byName, total = {}, 0
+            if type(pets)=="table" then for _,p in pairs(pets) do if type(p)=="table" and p.Equipped then byName[p.Name or "?"]=(byName[p.Name or "?"] or 0)+1; total=total+1 end end end
+            local lines={} for nm,ct in pairs(byName) do lines[#lines+1]=("%s x%d"):format(tostring(nm),ct) end
+            table.sort(lines)
+            return lines, total
+        end
+        local function plantedCounts()
+            local plot=getPlot(); local plants=plot and plot:FindFirstChild("Plants"); local m={}
+            if plants then for _,pl in ipairs(plants:GetChildren()) do local s=pl:GetAttribute("SeedName"); if s then m[s]=(m[s] or 0)+1 end end end
+            return m
+        end
+        local function fmt(n)
+            n=tonumber(n) or 0; local a=math.abs(n)
+            if a>=1e9 then return ("%.2fB"):format(n/1e9) elseif a>=1e6 then return ("%.2fM"):format(n/1e6)
+            elseif a>=1e3 then return ("%.2fK"):format(n/1e3) else return tostring(math.floor(n+0.5)) end
+        end
         local function fieldFor(name, lines, total)
             local v = (#lines>0) and table.concat(lines, "\n") or "(none)"
             if #v > 1000 then v = v:sub(1, 1000) .. "\n..." end
             return { name = ("%s (%d)"):format(name, total), value = v, inline = false }
         end
-        print(("[WEBHOOK] inventory snapshot started; interval=%ss"):format(tostring(C.InventoryInterval or 300)))
+        local interval = math.max(10, tonumber(C.StatsInterval) or 300)
+        local firstShek, firstClock = nil, os.clock()
+        print(("[WEBHOOK] stats snapshot started; interval=%ss"):format(tostring(interval)))
         while active() do
             local data = getData()
             if data then
-                local sheckles = math.floor(tonumber(data.Sheckles) or 0)
+                local shek = math.floor(tonumber(data.Sheckles) or 0)
+                if firstShek == nil then firstShek = shek; firstClock = os.clock() end
+                local perMin = 0; do local mins=(os.clock()-firstClock)/60; if mins>0.08 then perMin=(shek-firstShek)/mins end end
+                local w = workspace:GetAttribute("ActiveWeather"); w = (type(w)=="string" and w~="") and w or "Clear"
                 local inv = data.Inventory or {}
                 local sL,sT = summarize(inv, SEED_CATS)
                 local gL,gT = summarize(inv, GEAR_CATS)
                 local pL,pT = summarize(inv, PET_CATS)
-                local ok = webhookPost(C.InventoryUrl, {
+                local eL,eT = equippedList(data)
+                local targets = (Cfg.PlantConfig and Cfg.PlantConfig.Targets) or {}
+                local pc = plantedCounts(); local pnames = {}
+                for n,t in pairs(targets) do if (tonumber(t) or 0) > 0 then pnames[#pnames+1]=n end end
+                table.sort(pnames)
+                local plines, ptot = {}, 0
+                for _,n in ipairs(pnames) do local have=pc[n] or 0; ptot=ptot+have; plines[#plines+1]=("%s: %d/%d"):format(n, have, tonumber(targets[n]) or 0) end
+                local name = (lp.DisplayName ~= lp.Name) and ("%s (@%s)"):format(lp.DisplayName, lp.Name) or lp.Name
+                local ok = webhookPost(C.StatsUrl, {
                     embeds = {{
-                        title = "Inventory Snapshot",
-                        description = ("Player: **%s**\nSheckles: **%d**"):format(tostring(lp.Name), sheckles),
-                        color = 3447003,
-                        fields = { fieldFor("Seeds", sL, sT), fieldFor("Gear", gL, gT), fieldFor("Pets", pL, pT) },
-                        footer = { text = "GAG2 Inventory " .. os.date("%Y-%m-%d %H:%M:%S") },
+                        title = "GAG2 Stats",
+                        description = ("**%s**\nSheckles: **%s**  (%s%s/min)\nWeather / Event: **%s**")
+                            :format(name, fmt(shek), perMin>=0 and "+" or "", fmt(perMin), w),
+                        color = 2303786,
+                        fields = {
+                            fieldFor("Seeds Planted vs Target", plines, ptot),
+                            fieldFor("Equipped Pets", eL, eT),
+                            fieldFor("Inventory - Seeds", sL, sT),
+                            fieldFor("Inventory - Pets", pL, pT),
+                            fieldFor("Inventory - Gears", gL, gT),
+                        },
+                        footer = { text = "GAG2 Stats " .. os.date("%Y-%m-%d %H:%M:%S") },
                     }},
-                }, C.InventoryMessageID, "Inventory")
-                if ok then dbg(("posted (sheckles=%d seeds=%d gear=%d pets=%d)"):format(sheckles, sT, gT, pT)) end
+                }, C.StatsMessageID, "Stats")
+                if ok then dbg(("posted (sheckles=%d seeds=%d pets=%d gears=%d equip=%d)"):format(shek, sT, pT, gT, eT)) end
             end
-            for _=1, math.max(10, C.InventoryInterval or 300) do if not active() then return end task.wait(1) end
+            for _=1, interval do if not active() then return end task.wait(1) end
         end
-        print("[WEBHOOK] inventory snapshot stopped.")
+        print("[WEBHOOK] stats snapshot stopped.")
     end
 
     local function runBuyGears(C)
@@ -757,20 +865,30 @@
             if hasRar then for name,info in pairs(GEAR) do if rarWant[info.Rarity:lower()] and stockMax(name)>0 then want[name]=true end end end
             return want
         end
+        -- MEASURED: PurchaseGear is NOT rate-limited (11 fired in one frame -> all 11 landed), same as
+        -- PurchaseSeed. So fire the whole affordable/in-stock batch at ONCE, verify, re-fire shortfall.
+        -- (Old path bought one at a time, up to 1.5s confirm + 0.15s pad EACH.) The gear shop restocks
+        -- fast, so remaining() is re-read every pass.
         local function buyOne(name)
             local info = GEAR[name]
             if not info then warn(("[BUYGEAR] unknown gear '%s' (check spelling)"):format(name)); return 0 end
-            local cost, bought = info.Cost, 0
-            while active() do
-                if remaining(name)<=0 then break end
-                if sheckles()<cost then break end
-                local before = purchased(name)
-                pcall(function() Net.GearShop.PurchaseGear:Fire(name) end)
-                local t0=os.clock(); repeat task.wait(0.1) until purchased(name)>before or not active() or os.clock()-t0>1.5
-                if purchased(name)>before then bought=bought+1 else break end
-                task.wait(0.15)
+            local cost = info.Cost
+            local start = purchased(name)
+            local function canBuy()
+                local n = remaining(name)
+                if cost>0 then n = math.min(n, math.floor(sheckles()/cost)) end
+                return math.max(0, n)
             end
-            return bought
+            for _=1,5 do
+                if not active() then break end
+                local n = canBuy(); if n<=0 then break end
+                local before = purchased(name)
+                for _=1,n do pcall(function() Net.GearShop.PurchaseGear:Fire(name) end) end   -- whole batch in one burst
+                local t0=os.clock()
+                repeat task.wait(0.1) until purchased(name)>=before+n or not active() or os.clock()-t0>2
+                if purchased(name)<=before then break end                                       -- nothing landed -> stop
+            end
+            return purchased(name)-start
         end
         print("[BUYGEAR] started")
         while active() do
@@ -813,20 +931,39 @@
         local handled  = {}   
         local cooldown = {}   
 
-        local function wantPet(part)
-            if part:GetAttribute("OwnerUserId") ~= 0 then return false end   
-            local pn = tostring(part:GetAttribute("PetName") or "")
-            local rr = tostring(part:GetAttribute("Rarity") or "")
-            if hasSp and not spWant[pn:lower()] then return false end
-            if hasRa and not raWant[rr:lower()] then return false end
-            local price = tonumber(part:GetAttribute("Price")) or 0
-            if sheckles() < price then return false end
-            return true, pn, rr, price
+        -- match by species/rarity + still wild (NO sheckles check here; the loop scans this every
+        -- tick, so the affordability gate lives in claimWild right before the teleport).
+        local function matchPet(part)
+            if part:GetAttribute("OwnerUserId") ~= 0 then return false end
+            local pn = tostring(part:GetAttribute("PetName") or ""):lower()
+            local rr = tostring(part:GetAttribute("Rarity") or ""):lower()
+            if hasSp and not spWant[pn] then return false end
+            if hasRa and not raWant[rr] then return false end
+            return true
+        end
+        -- Price attribute can read 0/nil for a frame right after a pet spawns; wait briefly so the
+        -- affordability check isn't fooled into teleporting to a pet we can't actually afford.
+        local function resolvePrice(part)
+            local p = tonumber(part:GetAttribute("Price")) or 0
+            if p > 0 then return p end
+            local dl = os.clock() + 1.0
+            while part.Parent and p <= 0 and os.clock() < dl do task.wait(0.05); p = tonumber(part:GetAttribute("Price")) or 0 end
+            return p
         end
         local function claimWild(part)
-            local ok, pn, rr, price = wantPet(part)
-            if not ok then return false end
-            local home; do local h=root(); if h then home=h.Position end end  
+            if not matchPet(part) then return false end
+            local pn = tostring(part:GetAttribute("PetName") or "")
+            local rr = tostring(part:GetAttribute("Rarity") or "")
+            -- AFFORDABILITY GATE (before ANY teleport): resolve the real price + check Sheckles.
+            -- If we can't afford this pet, do NOT teleport to it.
+            local price = resolvePrice(part)
+            if price <= 0 then cooldown[part] = os.clock() + 5; dbg(("price unknown for %s - skip"):format(pn)); return false end
+            if sheckles() < price then
+                cooldown[part] = os.clock() + 5
+                dbg(("not enough Sheckles for %s (%s): need %d have %d - NOT teleporting"):format(pn, rr, price, sheckles()))
+                return false
+            end
+            local home; do local h=root(); if h then home=h.Position end end
             pcall(function() Net.Pets.WildPetTame:Fire(part) end)
             task.wait(0.1)
             if part.Parent and (part:GetAttribute("OwnerUserId") or 0) == 0 then
@@ -859,7 +996,7 @@
             local best, bestRank
             for _,part in ipairs(refFolder:GetChildren()) do
                 if part:IsA("BasePart") and not handled[part] and not (cooldown[part] and os.clock() < cooldown[part]) then
-                    if select(1, wantPet(part)) then
+                    if matchPet(part) then
                         local rk = rarityRank(part)
                         if not best or rk > bestRank then best, bestRank = part, rk end
                     end
@@ -1019,6 +1156,9 @@
         local Net = require(RS.SharedModules.Networking)
         local codes = C.ListCodes or {}
         if #codes == 0 then dbg("no codes listed - skip"); return end
+        -- Misc starts at execute (pre-spawn); wait until loaded so codes aren't wasted
+        repeat task.wait(1) until not alive() or (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp:GetAttribute("LoadingScreenActive") ~= true)
+        if not alive() then return end
         print(("[CODE] redeeming %d code(s)"):format(#codes))
         for _, code in ipairs(codes) do
             if not alive() then return end
@@ -1035,6 +1175,244 @@
             end
         end
         print("[CODE] done.")
+    end
+
+    -- On-screen live stats panel (gaya seperti hub lain). Reads everything live (no counters
+    -- needed): username, Sheckles + sheckles/min, weather/event, inventory (seeds/pets/gears like
+    -- the webhook), equipped pet list, and seeds planted vs the Plant subsystem targets.
+    local function runStatsGui(C)
+        local function active() return alive() and (C.StatsGUI ~= false) end
+        if C.StatsGUI == false then return end
+        local startClock = os.clock()   -- captured at execute -> drives the Uptime row
+
+        local UIS = game:GetService("UserInputService")
+        local ReplicaClient = require(RS.ClientModules.ReplicaClient)
+        local SEED_CATS = { "Seeds" }
+        local GEAR_CATS = { "Sprinklers","WateringCans","Trowels","Rakes","Ladders","Teleporters","Flashbangs" }
+        local PET_CATS  = { "Pets","Birds","Gnomes","Raccoons" }
+        local PER_INSTANCE = { Pets=true, Birds=true, Gnomes=true, Raccoons=true, HarvestedFruits=true, Eggs=true }
+
+        local function getData()
+            local ok,reg = pcall(ReplicaClient.Test); if not ok then return nil end
+            for _,rep in pairs(reg.Replicas or {}) do if rep.Token=="PlayerState" and rep.Data then return rep.Data end end
+        end
+        local function summarize(inv, cats)
+            local lines, total = {}, 0
+            for _,cat in ipairs(cats) do
+                local t = inv[cat]
+                if type(t)=="table" then
+                    if PER_INSTANCE[cat] then
+                        local byName = {}
+                        for _,val in pairs(t) do
+                            local nm = (type(val)=="table" and (val.Name or val.PetName or val.FruitName)) or cat
+                            byName[nm] = (byName[nm] or 0) + 1; total = total + 1
+                        end
+                        for nm,ct in pairs(byName) do lines[#lines+1] = ("%s x%d"):format(tostring(nm), ct) end
+                    else
+                        for key,val in pairs(t) do local n=tonumber(val) or 0; if n>0 then lines[#lines+1]=("%s x%d"):format(tostring(key), n); total=total+n end end
+                    end
+                end
+            end
+            table.sort(lines)
+            return lines, total
+        end
+        local function equippedList(data)
+            local pets = data and data.Inventory and data.Inventory.Pets
+            local byName, total = {}, 0
+            if type(pets)=="table" then
+                for _,p in pairs(pets) do if type(p)=="table" and p.Equipped then byName[p.Name or "?"]=(byName[p.Name or "?"] or 0)+1; total=total+1 end end
+            end
+            local lines={} for nm,ct in pairs(byName) do lines[#lines+1]=("%s x%d"):format(tostring(nm),ct) end
+            table.sort(lines)
+            return lines, total
+        end
+        local function plantedCounts()
+            local plot = getPlot(); local plants = plot and plot:FindFirstChild("Plants")
+            local m = {}
+            if plants then for _,pl in ipairs(plants:GetChildren()) do local s=pl:GetAttribute("SeedName"); if s then m[s]=(m[s] or 0)+1 end end end
+            return m
+        end
+        local function fmt(n)
+            n = tonumber(n) or 0; local a = math.abs(n)
+            if a>=1e9 then return ("%.2fB"):format(n/1e9)
+            elseif a>=1e6 then return ("%.2fM"):format(n/1e6)
+            elseif a>=1e3 then return ("%.2fK"):format(n/1e3)
+            else return tostring(math.floor(n+0.5)) end
+        end
+        local function fmtTime(sec)
+            sec = math.max(0, math.floor(sec))
+            local h = math.floor(sec/3600); local m = math.floor((sec%3600)/60); local s = sec%60
+            if h>0 then return ("%02dh %02dm %02ds"):format(h,m,s) else return ("%02dm %02ds"):format(m,s) end
+        end
+        local function joinTrunc(lines, maxLines)
+            if #lines == 0 then return "(none)" end
+            if #lines > maxLines then local cut={} for i=1,maxLines do cut[i]=lines[i] end cut[#cut+1]=("... (+%d more)"):format(#lines-maxLines); lines=cut end
+            return table.concat(lines, "\n")
+        end
+
+        -- colors (pure black hub style, like the reference)
+        local BG     = Color3.fromRGB(0, 0, 0)
+        local BAR    = Color3.fromRGB(0, 0, 0)
+        local ACCENT = Color3.fromRGB(255, 255, 255)
+        local GRAY   = Color3.fromRGB(150, 150, 150)
+        local LIGHT  = Color3.fromRGB(235, 235, 235)
+        local AHEX, GHEX, LHEX = "#ffffff", "#9a9a9a", "#ebebeb"
+
+        local function guiParent()
+            local ok, hui = pcall(function() return gethui and gethui() end)
+            if ok and hui then return hui end
+            local ok2 = pcall(function() return game:GetService("CoreGui").Name end)
+            if ok2 then return game:GetService("CoreGui") end
+            return lp:WaitForChild("PlayerGui")
+        end
+        local parent = guiParent()
+        for _,c in ipairs(parent:GetChildren()) do if c.Name=="GAG2_Stats" then pcall(function() c:Destroy() end) end end
+        if G.__GAG2_STATS then pcall(function() G.__GAG2_STATS:Destroy() end) end
+
+        local sg = Instance.new("ScreenGui")
+        sg.Name = "GAG2_Stats"; sg.ResetOnSpawn = false; sg.IgnoreGuiInset = true
+        sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; sg.DisplayOrder = 9999
+        if syn and syn.protect_gui then pcall(syn.protect_gui, sg) end
+        sg.Parent = parent
+        G.__GAG2_STATS = sg
+
+        local root = Instance.new("Frame")
+        root.Name = "Root"; root.AnchorPoint = Vector2.new(0.5,0.5)
+        root.Position = UDim2.new(0.5,0,0.5,0); root.Size = UDim2.new(1,0,1,0)   -- full screen
+        root.BackgroundColor3 = BG; root.BackgroundTransparency = 0; root.BorderSizePixel = 0
+        root.Parent = sg
+
+        -- centered, scrollable content (no title bar; the title is just the first centered label)
+        local body = Instance.new("ScrollingFrame")
+        body.Name="Body"; body.AnchorPoint=Vector2.new(0.5,0)
+        body.Position=UDim2.new(0.5,0,0,30); body.Size=UDim2.new(1,0,1,-84)
+        body.BackgroundTransparency=1; body.BorderSizePixel=0; body.ScrollBarThickness=4
+        body.ScrollBarImageColor3=GRAY; body.ScrollBarImageTransparency=0.4
+        body.CanvasSize=UDim2.new(0,0,0,0); body.AutomaticCanvasSize=Enum.AutomaticSize.Y; body.Parent=root
+        do local lay=Instance.new("UIListLayout"); lay.Padding=UDim.new(0,3); lay.SortOrder=Enum.SortOrder.LayoutOrder
+           lay.HorizontalAlignment=Enum.HorizontalAlignment.Center; lay.Parent=body
+           local pad=Instance.new("UIPadding"); pad.PaddingLeft=UDim.new(0,16); pad.PaddingRight=UDim.new(0,16)
+           pad.PaddingTop=UDim.new(0,6); pad.PaddingBottom=UDim.new(0,8); pad.Parent=body end
+
+        local order = 0
+        local function mkLabel(o)
+            order = order + 1
+            local l=Instance.new("TextLabel")
+            l.BackgroundTransparency=1; l.Size=UDim2.new(1,0,0,o.h or 17)
+            l.AutomaticSize = o.auto and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
+            l.Font=Enum.Font.GothamBold; l.TextSize=o.size or 14   -- ALL labels bold
+            l.TextColor3=o.color or LIGHT; l.RichText=true; l.TextWrapped=true
+            l.TextXAlignment=Enum.TextXAlignment.Center; l.TextYAlignment=Enum.TextYAlignment.Top
+            l.LayoutOrder=order; l.Text=""; l.Parent=body
+            return l
+        end
+        local function sep()
+            order = order + 1
+            local f=Instance.new("Frame"); f.Size=UDim2.new(0.85,0,0,1); f.BackgroundColor3=GRAY
+            f.BackgroundTransparency=0.4; f.BorderSizePixel=0; f.LayoutOrder=order; f.Parent=body
+        end
+
+        local function row(name) return ("<font color='%s'>%s</font>"):format(GHEX, name) end
+        local function val(v)    return ("<font color='%s'>%s</font>"):format(AHEX, tostring(v)) end
+
+        local titleLbl = mkLabel{ size=20, h=26 }; titleLbl.Text = "GAG2 Stats"
+        sep()
+        local lblUser    = mkLabel{ size=14 }
+        local lblShek    = mkLabel{ size=14 }
+        local lblRate    = mkLabel{ size=14 }
+        local lblWeather = mkLabel{ size=14 }
+        local lblUptime  = mkLabel{ size=14 }
+        sep()
+        local hPlant = mkLabel{ size=14, color=ACCENT }
+        local lPlant = mkLabel{ size=12, auto=true, color=LIGHT }
+        sep()
+        local hEquip = mkLabel{ size=14, color=ACCENT }
+        local lEquip = mkLabel{ size=12, auto=true, color=LIGHT }
+        sep()
+        local hSeeds = mkLabel{ size=14, color=ACCENT }
+        local lSeeds = mkLabel{ size=12, auto=true, color=LIGHT }
+        sep()
+        local hPets = mkLabel{ size=14, color=ACCENT }
+        local lPets = mkLabel{ size=12, auto=true, color=LIGHT }
+        sep()
+        local hGears = mkLabel{ size=14, color=ACCENT }
+        local lGears = mkLabel{ size=12, auto=true, color=LIGHT }
+
+        -- bottom-center HIDE/SHOW toggle. Parented to the ScreenGui (NOT root) so it stays on screen
+        -- after root is hidden -> hiding the panel leaves ONLY this button visible.
+        local closed = false
+        local shown  = true
+        local toggle = Instance.new("TextButton")
+        toggle.Name="Toggle"; toggle.AnchorPoint=Vector2.new(0.5,1)
+        toggle.Position=UDim2.new(0.5,0,1,-12); toggle.Size=UDim2.new(0,150,0,26)
+        toggle.BackgroundColor3=Color3.fromRGB(0,0,0); toggle.BackgroundTransparency=0.1; toggle.AutoButtonColor=true
+        toggle.Font=Enum.Font.GothamBold; toggle.TextSize=13; toggle.TextColor3=Color3.fromRGB(255,255,255)
+        toggle.Text="Hide Stats"; toggle.BorderSizePixel=0; toggle.ZIndex=50; toggle.Parent=sg
+        do local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,8); c.Parent=toggle
+           local s=Instance.new("UIStroke"); s.Color=Color3.fromRGB(255,255,255); s.Thickness=1; s.Transparency=0.15; s.Parent=toggle end   -- thin white outline
+        toggle.MouseButton1Click:Connect(function()
+            shown = not shown
+            root.Visible = shown
+            toggle.Text = shown and "Hide Stats" or "Show Stats"
+        end)
+        -- defensive: nothing in this script flips visibility except the button above, so any "auto
+        -- show/hide by itself" is an EXTERNAL flip (the game hiding GUIs during a cutscene, the
+        -- executor rebuilding its gethui container, or a re-exec). Snap visibility back to the
+        -- user's chosen state the instant anything changes it.
+        root:GetPropertyChangedSignal("Visible"):Connect(function() if root.Visible ~= shown then root.Visible = shown end end)
+        sg:GetPropertyChangedSignal("Enabled"):Connect(function() if sg.Enabled ~= true then sg.Enabled = true end end)
+
+        local firstShek, firstClock = nil, os.clock()
+        local function update()
+            local data = getData()
+            local name = lp.DisplayName ~= lp.Name and ("%s (@%s)"):format(lp.DisplayName, lp.Name) or lp.Name
+            lblUser.Text = row("Username")..val("   "..name)
+
+            local shek = data and tonumber(data.Sheckles) or 0
+            if data and firstShek == nil then firstShek = shek; firstClock = os.clock() end
+            lblShek.Text = row("Sheckles")..val("   "..fmt(shek))
+            local perMin = 0
+            if firstShek then local mins=(os.clock()-firstClock)/60; if mins>0.08 then perMin=(shek-firstShek)/mins end end
+            lblRate.Text = row("Sheckles/min")..val("   "..(perMin>=0 and "+" or "")..fmt(perMin))
+
+            local w = workspace:GetAttribute("ActiveWeather")
+            lblWeather.Text = row("Weather / Event")..val("   "..((type(w)=="string" and w~="" ) and w or "Clear"))
+            lblUptime.Text = row("Uptime")..val("   "..fmtTime(os.clock()-startClock))
+
+            -- planted vs target (Plant subsystem)
+            local targets = (Cfg.PlantConfig and Cfg.PlantConfig.Targets) or {}
+            local pc = plantedCounts()
+            local pnames = {} for n,t in pairs(targets) do if (tonumber(t) or 0) > 0 then pnames[#pnames+1]=n end end
+            table.sort(pnames)
+            local plines, ptot = {}, 0
+            for _,n in ipairs(pnames) do local have=pc[n] or 0; ptot=ptot+have; plines[#plines+1]=("%s: %d/%d"):format(n, have, tonumber(targets[n]) or 0) end
+            hPlant.Text = ("Seeds Planted vs Target (%d)"):format(ptot)
+            lPlant.Text = joinTrunc(plines, 40)
+
+            local eL, eT = equippedList(data)
+            hEquip.Text = ("Equipped Pets (%d)"):format(eT)
+            lEquip.Text = joinTrunc(eL, 30)
+
+            local inv = (data and data.Inventory) or {}
+            local sL,sT = summarize(inv, SEED_CATS)
+            local pL,pT = summarize(inv, PET_CATS)
+            local gL,gT = summarize(inv, GEAR_CATS)
+            hSeeds.Text = ("Inventory - Seeds (%d)"):format(sT); lSeeds.Text = joinTrunc(sL, 60)
+            hPets.Text  = ("Inventory - Pets (%d)"):format(pT);  lPets.Text  = joinTrunc(pL, 60)
+            hGears.Text = ("Inventory - Gears (%d)"):format(gT); lGears.Text = joinTrunc(gL, 60)
+        end
+
+        print("[STATS] panel up")
+        while active() and not closed do
+            if sg.Enabled ~= true then sg.Enabled = true end       -- backup re-assert (signal above is the instant guard)
+            if root.Visible ~= shown then root.Visible = shown end
+            if shown then pcall(update) end
+            if not (sg and sg.Parent) then break end
+            task.wait(0.5)
+        end
+        pcall(function() sg:Destroy() end)
+        if G.__GAG2_STATS == sg then G.__GAG2_STATS = nil end
+        print("[STATS] panel closed.")
     end
 
     local function runGuard()
@@ -1118,7 +1496,7 @@
         print("[GUARD] started (safe hold-to-skip + garden-center pivot + night hold)")
     end
 
-    local function runMisc(C)
+    local function runFpsBoost(C)
         local function active() return alive() and Cfg.Misc ~= false end
         local Lighting = game:GetService("Lighting")
         local conns       = {}
@@ -1140,6 +1518,10 @@
             pcall(function() Lighting.EnvironmentDiffuseScale = 0; Lighting.EnvironmentSpecularScale = 0 end)
             if ter then local cl = ter:FindFirstChildOfClass("Clouds"); if cl then pcall(function() cl:Destroy() end) end end
 
+            -- Misc may start before spawn -> wait for PlotId so we never mistake our OWN garden
+            -- for an "other" one (which would un-parent our own Plants and break harvest).
+            for _=1,60 do if lp:GetAttribute("PlotId") or not active() then break end task.wait(0.5) end
+            myPlotName = "Plot"..tostring(lp:GetAttribute("PlotId"))
             local function removePlot(plot)
                 if plot.Name == myPlotName then return end
                 local pf = plot:FindFirstChild("Plants")
@@ -1154,11 +1536,8 @@
                         if pf and active() then removePlot(plot) end
                     end
                 end)
-                conns[#conns+1] = gardens.DescendantAdded:Connect(function(d)
-                    if active() and d.Name=="Plants" and d.Parent and d.Parent.Name~=myPlotName and d.Parent.Parent==gardens then
-                        removed[d]=d.Parent; pcall(function() d.Parent=nil end)
-                    end
-                end)
+                -- (removed gardens.DescendantAdded backup: it fired for EVERY fruit growing in every
+                -- garden = constant CPU. ChildAdded above already removes other gardens' Plants.)
             end
 
             local function killFx(d)
@@ -1236,15 +1615,34 @@
                print(("[MISC] fps boost applied (quality lowest, shadows/effects off, %d other gardens removed, particles+weather off, sfx muted)"):format(n)) end
         end
 
-        -- CHARACTER GUARD (always on): one Heartbeat that
-        --   * ANCHORS your HRP while it's NIGHT/moon (freeze: exploit flings can't throw you out of
-        --     the garden, and other players can't shove you) OR while a grab is running (true
-        --     anti-gravity = zero fall, not just velocity-zero),
-        --   * otherwise CLAMPS abnormal velocity (anti-fling) so you can't be launched.
-        -- Anchoring still lets the auto-grabbers set CFrame (teleport works on anchored parts).
+        -- keepalive + cleanup (FPS boost only): restore other gardens + players on stop
+        while active() do task.wait(2) end
+        for _,c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+        for pf,plot in pairs(removed) do pcall(function() pf.Parent = plot end) end          -- restore other gardens
+        for ch,par in pairs(hiddenChars) do pcall(function() ch.Parent = par end) end        -- restore other players
+        print("[MISC] fps boost stopped (other gardens + players restored)")
+    end
+
+    -- The rest of Misc (character guard / anti-fling / anti-afk / auto-reconnect / redeem) runs
+    -- only AFTER spawn -- unlike FpsBoost which starts at execute.
+    local function runMisc(C)
+        local function active() return alive() and Cfg.Misc ~= false end
+        local conns = {}
+
+        -- CHARACTER GUARD: anchor HRP on NIGHT/moon (freeze: exploit flings can't throw you out of
+        -- the garden, players can't shove you) / during a grab (true anti-gravity = no fall); else
+        -- clamp abnormal velocity (anti-fling). Anchoring still lets grabbers set CFrame.
         do
             local RunService = game:GetService("RunService")
             local MAXV = 100
+            local function gardenCenter()
+                local plot=getPlot(); if not plot then return nil end
+                local sum,n=Vector3.new(),0
+                for _,pp in ipairs(CS:GetTagged("PlantArea")) do if pp:IsA("BasePart") and pp:IsDescendantOf(plot) then sum=sum+pp.Position; n=n+1 end end
+                if n==0 then local ok,cf=pcall(function() return plot:GetBoundingBox() end); if ok then return cf.Position end return nil end
+                return (sum/n)+Vector3.new(0,6,0)
+            end
+            local center, centerAt = nil, 0
             conns[#conns+1] = RunService.Heartbeat:Connect(function()
                 if not active() then return end
                 local ch = lp.Character
@@ -1252,14 +1650,24 @@
                 if not hrp then return end
                 local w = workspace:GetAttribute("ActiveWeather")
                 local night = type(w) == "string" and w:lower():find("moon") ~= nil
-                local hold = night or (os.clock() < grabUntil)
+                local grabbing = os.clock() < grabUntil
+                local hold = night or grabbing
                 if hrp.Anchored ~= hold then pcall(function() hrp.Anchored = hold end) end
-                if not hold then
+                if night and not grabbing then
+                    -- HARD anti-steal: Anchored alone is only visual on our screen (a fling that writes
+                    -- CFrame, or that owns the part, still drags us server-side). We own our own
+                    -- character, so re-asserting CFrame EVERY frame back to the garden center wins the
+                    -- replication fight -> other players' fling/push can't pull us out of the garden.
+                    if (not center) or (os.clock()-centerAt > 5) then local c=gardenCenter(); if c then center=c; centerAt=os.clock() end end
+                    if center then pcall(function() hrp.CFrame = CFrame.new(center) * (hrp.CFrame - hrp.CFrame.Position) end) end
+                    pcall(function() hrp.AssemblyLinearVelocity=Vector3.zero; hrp.AssemblyAngularVelocity=Vector3.zero end)
+                elseif not hold then
+                    center = nil
                     if hrp.AssemblyLinearVelocity.Magnitude  > MAXV then pcall(function() hrp.AssemblyLinearVelocity  = Vector3.zero end) end
                     if hrp.AssemblyAngularVelocity.Magnitude > MAXV then pcall(function() hrp.AssemblyAngularVelocity = Vector3.zero end) end
                 end
             end)
-            print("[MISC] character guard armed (freeze on night + anti-gravity on grab + anti-fling)")
+            print("[MISC] character guard armed (HARD night freeze re-pin + anti-gravity on grab + anti-fling)")
         end
 
         if C.AntiAfk then
@@ -1292,14 +1700,10 @@
             print("[MISC] auto-reconnect armed (note: a hard network drop can kill the VM before it fires)")
         end
 
-        if C.RedeemCodes then task.spawn(runRedeemCodes, C) end
-
         while active() do task.wait(2) end
         for _,c in ipairs(conns) do pcall(function() c:Disconnect() end) end
-        for pf,plot in pairs(removed) do pcall(function() pf.Parent = plot end) end          -- restore other gardens
-        for ch,par in pairs(hiddenChars) do pcall(function() ch.Parent = par end) end        -- restore other players
         pcall(function() local h = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart"); if h then h.Anchored = false end end)  -- never leave frozen
-        print("[MISC] stopped (other gardens + players restored, character unfrozen)")
+        print("[MISC] stopped (character unfrozen)")
     end
 
     print("========================================================")
@@ -1311,6 +1715,27 @@
     print("========================================================")
 
     task.spawn(function() local ok,err=pcall(runGuard); if not ok then warn("[ALL] guard crashed: "..tostring(err)) end end)
+
+    -- FpsBoost and Redeem-Codes run IMMEDIATELY on execute. FpsBoost drops graphics right away
+    -- while still loading; Redeem fires its codes the moment you're spawned (it self-waits for the
+    -- character internally). The rest of Misc (char guard / anti-afk / auto-reconnect) waits for
+    -- spawn in the gated block below.
+    if Cfg.Misc and (Cfg.MiscConfig or {}).FpsBoost ~= false then
+        task.spawn(function() local ok,err=pcall(runFpsBoost, Cfg.MiscConfig or {}); if not ok then warn("[ALL] fps-boost crashed: "..tostring(err)) end end)
+    end
+    if Cfg.Misc then   -- SetFPS: cap FPS via setfpscap (0 = disabled / leave FPS untouched)
+        local n = tonumber((Cfg.MiscConfig or {}).SetFPS) or 0
+        if n > 0 then
+            local sfc = (typeof(setfpscap)=="function" and setfpscap) or (typeof(set_fps_cap)=="function" and set_fps_cap) or nil
+            if sfc then pcall(sfc, n); print(("[ALL] FPS cap set to %d"):format(n)) else warn("[ALL] SetFPS: executor has no setfpscap()") end
+        end
+    end
+    if Cfg.Misc and (Cfg.MiscConfig or {}).RedeemCodes then
+        task.spawn(function() local ok,err=pcall(runRedeemCodes, Cfg.MiscConfig or {}); if not ok then warn("[ALL] redeem crashed: "..tostring(err)) end end)
+    end
+    if Cfg.Misc and (Cfg.MiscConfig or {}).StatsGUI ~= false then
+        task.spawn(function() local ok,err=pcall(runStatsGui, Cfg.MiscConfig or {}); if not ok then warn("[ALL] stats-gui crashed: "..tostring(err)) end end)
+    end
 
     task.spawn(function()
         local function ready()
