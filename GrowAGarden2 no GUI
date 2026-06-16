@@ -1,60 +1,37 @@
-    ----------------------------------------------------------------------
-    -- CONFIG  (edit here)
-    ----------------------------------------------------------------------
     getgenv().Config = {
 
-        PlantBuy = true,
-        PlantBuyConfig = {
-            -- per-seed plant target (max planted in garden)
+        Plant = false,
+        PlantConfig = {
             Targets = {
                 ["Strawberry"] = 10,
                 ["Blueberry"] = 10,
                 ["Bamboo"] = 100,
                 ["Mushroom"] = 10,
-                ["Dragon Fruit"] = 10,
-                ["Poison Ivy"] = 10,
-                ["Venus Fly Trap"] = 10,
-                ["Pomegranate"] = 10,
-                ["Acorn"] = 10,
-                ["Cherry"] = 10,
-                ["Dragon's Breath"] = 10,
-                ["Moon Bloom"] = 10,
+                ["Green Bean"] = 3, -- DO NOT DELETE THIS
+                ["Dragon Fruit"] = 5,
+                ["Poison Ivy"] = 5,
+                ["Venus Fly Trap"] = 5,
+                ["Pomegranate"] = 5,
+                ["Acorn"] = 5,
+                ["Cherry"] = 5,
+                ["Dragon's Breath"] = 5,
+                ["Moon Bloom"] = 5,
             },
-            -- seeds that KEEP buying even after their plant target is reached
-            -- (stockpile). seeds not listed stop buying once planted >= target.
             KeepBuyingAfterTarget = { "Mushroom", "Bamboo" },
-            BuyMaxPerRestock    = 0,    -- 0 = buy all available stock per restock
-            MinSheckles         = 0,
-            MinSpacing          = 1.6,
-            PlantDelay          = 0.25,
-            PlantConfirmTimeout = 1.5,
-            CheckInterval       = 5,
-            Debug = true,
         },
 
-        Harvest = true,
+        Harvest = false,
         HarvestConfig = {
-            -- seeds harvested ONLY when mutated (any mutation); others harvest normally
             MutationOnly = { "Bamboo", "Mushroom" },
             Mutations    = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
-            RipeOnly     = true,
-            HarvestInterval  = 5,
-            FireDelay        = 0.15,
-            MaxPerSweep      = 200,
-            YieldEvery       = 40,
-            Debug = true,
         },
 
-        SeedGrab = true,
-        SeedGrabConfig = {
-            GrabRainbow = true, GrabGold = true, GrabAllSeedPacks = false,
-            ReturnAfter = true,
-            AntiAfk = true, AntiAfkInterval = 600,
-            YOffset = 3.0, ClaimTimeout = 2, LoopGap = 0.06,   -- LoopGap low = faster claim retries
-            Debug = true,
+        CollectEventSeeds = true,
+        CollectEventSeedsConfig = {
+            CollectRainbow = true, CollectGold = true, CollectAllSeedPacks = false,
         },
 
-        Mail = true,    -- 4th parallel thread; needs a real TargetUsername (placeholder rejected)
+        Mail = false,   -- OFF (skipped). set true + a REAL TargetUsername to re-enable
         MailConfig = {
             TargetUsername = "UserName", -- recipient
             TargetUserId   = nil,
@@ -62,39 +39,68 @@
             ListItem       = "Gold, Rainbow, Bamboo, Mushroom",  -- "Tulip" / "Tulip, Carrot" / "all"
             SendWhenCount  = 15,
             SendAmount     = 0,           -- 0 = send all you have past threshold
-            WatchInterval  = 5,
             Blacklist      = {},
             MaxPerItem     = 0,
-            DryRun         = false,       -- LIVE: actually sends. set true for preview-only
-            SendDebounce   = 2.0,
-            MaxItemsPerGift= 20,
-            Debug = true,
         },
 
-        Sell = true,    -- independent auto-sell thread (separate from Harvest)
+        Sell = false,    -- independent auto-sell thread (separate from Harvest)
         SellConfig = {
             -- "full"   = sell only when the fruit backpack hits the threshold (default)
             -- "always" = sell whenever you carry any fruit (old behaviour)
             Mode             = "full",
             SellAtFruitCount = 90,   -- (full mode) sell once FruitCount >= this   e.g. 90/100
             SellAtPercent    = 0,    -- 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
-            CheckInterval    = 3,    -- seconds between capacity checks
-            Debug = true,
         },
 
-        Webhook = true,    -- Discord webhook notifier (Mail + Inventory each have their OWN link)
+        Webhook = false,    -- Discord webhook notifier (Mail + Inventory each have their OWN link)
         WebhookConfig = {
-            -- Mail notification: fires on each successful auto-mail send
             Mail          = true,
             MailUrl       = "",  -- Discord webhook link for MAIL pings (empty = off)
             MailMessageID = "",  -- set a Discord message id => EDIT that one message in place.
                                  -- empty => post a NEW message each time (the id is printed after each post)
-            -- Inventory snapshot (periodic): Sheckles + Seeds + Gear + Pets  (NO crops/fruits)
             Inventory          = true,
             InventoryUrl       = "",   -- Discord webhook link for INVENTORY snapshots (empty = off)
             InventoryMessageID = "",   -- set a message id => edit in place; empty => new message each time
             InventoryInterval  = 300,  -- seconds between inventory posts
-            Debug = true,
+        },
+
+        BuyGears = false,   -- auto-buy gears from the Gear Shop (buys ALL stock of each listed)
+        BuyGearsConfig = {
+            ListGear = { "Common Watering Can", "Trowel", "Basic Pot" },  -- exact gear names
+            Rarities = {},          -- also buy ALL stock of any in-stock gear of these rarities
+        },
+
+        BuyPets = false,    -- auto-tame wild pets (Map.WildPetRef); costs the pet's Price in Sheckles
+        BuyPetsConfig = {
+            ListPets = {},          -- {} = ALL species  e.g. { "Owl", "BlackDragon" }
+            Rarities = {},          -- {} = ALL rarities e.g. { "Legendary" }
+        },
+
+        ExpandPlot = false, -- auto-expand garden while affordable (1M / 40M / 200M for #3/4/5)
+        ExpandPlotConfig = {
+            TargetExpansions = 5,   -- expand until OwnedExpansions reaches this (hard max 5)
+        },
+
+        BuySlot = false,    -- auto-buy pet slots (raise MaxEquippedPets; 200k / 1M / 5M for slots 4/5/6)
+        BuySlotConfig = {
+            TargetSlots = 6,        -- raise MaxEquippedPets to this (base 3, hard max 6)
+        },
+
+        EquipPets = false,  -- keep a configured pet loadout equipped (unequips anything not listed)
+        EquipPetsConfig = {
+            ListEquip = { "Owl", "Frog" },  -- species to keep equipped (repeat a name = 2 of it)
+            EquipRarities = {},             -- also equip ANY owned pet of these rarities (fills leftover slots)
+                                            --   rarities: Common, Uncommon, Rare, Super, Legendary, Mythic
+        },
+
+        Misc = true,    -- misc client-side helpers (fps boost / anti-afk / auto-reconnect / redeem codes)
+        MiscConfig = {
+            FpsBoost = true,
+            AntiAfk         = true,   -- anti-idle: auto-jump so Roblox won't kick you for being AFK
+            AutoReconnect = true,     -- rejoin automatically if you get disconnected / kicked
+            RedeemCodes = false,      -- redeem the codes below once on start (Net.Settings.SubmitCode)
+            ListCodes   = { "abc", "def" },
+            Debug = true,   -- ONE debug switch for ALL subsystems (true = verbose, false = quiet)
         },
     }
 
@@ -108,12 +114,17 @@
     G.__GAG2_PB = false; G.__GAG2_PLANT = false; G.__GAG2_BUY = false
     G.__GAG2_HARVEST = false; G.__GAG2_HS = false; G.__GAG2_HMUT = false
     G.__GAG2_SEEDGRAB = false; G.__GAG2_MAIL = false
+    G.__GAG2_GEARPET = false   
     G.__GAG2_ALL_GEN = (tonumber(G.__GAG2_ALL_GEN) or 0) + 1
     local MY = G.__GAG2_ALL_GEN
     G.__GAG2_ALL = true
     local function alive() return G.__GAG2_ALL_GEN == MY and G.__GAG2_ALL ~= false end
 
     local Cfg = getgenv().Config
+    local function miscDebug() return (Cfg.MiscConfig and Cfg.MiscConfig.Debug) == true end
+    -- self-refreshing deadline: grab loops push this forward each tick so the character-guard
+    -- anchors the HRP during a grab (true anti-gravity). Auto-expires -> never stuck anchored.
+    local grabUntil = 0
 
     local function getPlot()
         local id = lp:GetAttribute("PlotId")
@@ -158,8 +169,8 @@
     end
 
     local function runPlantBuy(C)
-        local function active() return alive() and Cfg.PlantBuy ~= false end
-        local function dbg(...) if C.Debug then print("[PB]", ...) end end
+        local function active() return alive() and Cfg.Plant ~= false end
+        local function dbg(...) if miscDebug() then print("[PB]", ...) end end
 
         local P_Buy = Packet("PurchaseSeed")
         local PlayerStateClient = require(RS.ClientModules.PlayerStateClient)
@@ -178,6 +189,23 @@
         local function invCount(n) local d=data(); local s=d and d.Inventory and d.Inventory.Seeds; return (s and s[n]) or 0 end
         local function purchasedCount(n) local d=data(); local p=d and d.PurchasedThisRestock and d.PurchasedThisRestock.Seeds; return (p and p[n]) or 0 end
         local function stockRemaining(n) local v=ITEMS:FindFirstChild(n); local mx=(v and v:IsA("ValueBase") and v.Value) or 0; return math.max(0, mx - purchasedCount(n)) end
+
+        -- spatial hash: O(1) spacing checks (vs scanning EVERY plant per candidate cell)
+        local function makeHash(cell) return { cell = cell, b = {} } end
+        local function hAdd(h, x, z)
+            local k = math.floor(x/h.cell)..","..math.floor(z/h.cell)
+            local t = h.b[k]; if not t then t = {}; h.b[k] = t end
+            t[#t+1] = Vector2.new(x, z)
+        end
+        local function hFar(h, x, z, minSp)
+            local cx, cz = math.floor(x/h.cell), math.floor(z/h.cell)
+            local v = Vector2.new(x, z)
+            for dx = -1, 1 do for dz = -1, 1 do
+                local t = h.b[(cx+dx)..","..(cz+dz)]
+                if t then for _, o in ipairs(t) do if (o - v).Magnitude < minSp then return false end end end
+            end end
+            return true
+        end
 
         local function plantedCount(name)
             local plot=getPlot(); local plants=plot and plot:FindFirstChild("Plants")
@@ -205,7 +233,6 @@
             while active() do
                 if cap and cap>0 and bought>=cap then break end
                 if stockRemaining(name) <= 0 then break end
-                if C.MinSheckles>0 and (sheckles()-price) < C.MinSheckles then break end
                 if sheckles() < price then break end
                 local before = purchasedCount(name)
                 pcall(function() P_Buy:Fire(name) end)
@@ -230,52 +257,55 @@
             for _,p in ipairs(CS:GetTagged("PlantArea")) do if p:IsDescendantOf(plot) and p:IsA("BasePart") then areas[#areas+1]=p end end
             if #areas==0 then return 0 end
             local rp=RaycastParams.new(); rp.FilterType=Enum.RaycastFilterType.Include; rp.FilterDescendantsInstances=areas
-            local occupied={}
-            for _,pl in ipairs(plants:GetChildren()) do local ok,cf=pcall(function() return pl:GetPivot() end); if ok then occupied[#occupied+1]=Vector2.new(cf.Position.X,cf.Position.Z) end end
-            local function farEnough(x,z) local v=Vector2.new(x,z) for _,o in ipairs(occupied) do if (o-v).Magnitude<C.MinSpacing then return false end end return true end
+            local hash = makeHash(1.2)
+            for _,pl in ipairs(plants:GetChildren()) do local ok,cf=pcall(function() return pl:GetPivot() end); if ok then hAdd(hash, cf.Position.X, cf.Position.Z) end end
+            local function farEnough(x,z) return hFar(hash, x, z, 1.2) end
+            -- shuffle PlantArea order so a need-capped scan isn't biased to the first/corner plot
+            for i=#areas,2,-1 do local j=math.random(i); areas[i],areas[j]=areas[j],areas[i] end
             local added=0
             local conn=plants.ChildAdded:Connect(function(m)
                 task.defer(function()
                     for _=1,20 do if m:GetAttribute("SeedName") then break end task.wait(0.05) end
                     if m:GetAttribute("SeedName")==name then added=added+1
-                        local ok,cf=pcall(function() return m:GetPivot() end); if ok then occupied[#occupied+1]=Vector2.new(cf.Position.X,cf.Position.Z) end
+                        local ok,cf=pcall(function() return m:GetPivot() end); if ok then hAdd(hash, cf.Position.X, cf.Position.Z) end
                     end
                 end)
             end)
-            local want = math.min(need * 3 + 10, 500)   
+            local CAP = math.min(need * 4 + 30, 2000)   -- only scan roughly what we still need
             local spots, scanned = {}, 0
             for _,part in ipairs(areas) do
-                if #spots >= want then break end
+                if #spots >= CAP then break end
                 local hx,hz = part.Size.X/2-1, part.Size.Z/2-1
-                local lx = -hx
+                local lx = -hx + math.random()*1.2   -- random phase (avoid corner bias when capped)
                 while lx <= hx do
-                    local lz = -hz
+                    local lz = -hz + math.random()*1.2
                     while lz <= hz do
                         local wp = (part.CFrame*CFrame.new(lx, part.Size.Y/2+0.2, lz)).Position
                         if farEnough(wp.X, wp.Z) then
                             local hit = workspace:Raycast(wp+Vector3.new(0,5,0), Vector3.new(0,-20,0), rp)
-                            if hit then spots[#spots+1] = hit.Position; if #spots >= want then break end end
+                            if hit then spots[#spots+1] = hit.Position; if #spots >= CAP then break end end
                         end
                         scanned = scanned + 1
                         if scanned % 200 == 0 then task.wait() end
-                        lz = lz + C.MinSpacing
+                        lz = lz + 1.2
                     end
-                    if #spots >= want then break end
-                    lx = lx + C.MinSpacing
+                    if #spots >= CAP then break end
+                    lx = lx + 1.2
                 end
             end
-            if #spots == 0 then dbg(("no free spot for %s (garden full at spacing %.2f)"):format(name, C.MinSpacing)) end
+            for i = #spots, 2, -1 do local j = math.random(i); spots[i], spots[j] = spots[j], spots[i] end  -- shuffle
+            if #spots == 0 then dbg(("no free spot for %s (garden full at spacing %.2f)"):format(name, 1.2)) end
             local placed = 0
             for _,pos in ipairs(spots) do
                 if not active() or placed >= need then break end
                 if farEnough(pos.X, pos.Z) then          
                     local before = added
-                    occupied[#occupied+1] = Vector2.new(pos.X, pos.Z)
+                    hAdd(hash, pos.X, pos.Z)
                     pcall(function() Packet("PlantSeed"):Fire(pos, name, tool) end)
                     local t0 = os.clock()
-                    repeat task.wait(0.1) until added>before or not active() or os.clock()-t0>C.PlantConfirmTimeout
+                    repeat task.wait(0.1) until added>before or not active() or os.clock()-t0>1.5
                     if added>before then placed=placed+1 end
-                    task.wait(C.PlantDelay)
+                    task.wait(0.25)
                 end
             end
             conn:Disconnect()
@@ -289,18 +319,18 @@
         while active() do
             for name, target in pairs(C.Targets) do
                 if not active() then break end
-                if wantBuy(name, target) then local b=buySeed(name, C.BuyMaxPerRestock); if b>0 then dbg(("bought %s x%d (inv %d)"):format(name,b,invCount(name))) end end
+                if wantBuy(name, target) then local b=buySeed(name, 0); if b>0 then dbg(("bought %s x%d (inv %d)"):format(name,b,invCount(name))) end end
                 if wantPlant(name, target) then local p=plantTopUp(name, target); if p>0 then print(("[PB] planted %s x%d (now %d/%d)"):format(name,p,plantedCount(name),target)) end
                 else dbg(("%s target met (%d/%d) - plant stopped%s"):format(name, plantedCount(name), target, KEEPBUY[name] and ", still buying" or ", buy stopped")) end
             end
-            for _=1, math.max(3, C.CheckInterval) do if not active() then return end task.wait(1) end
+            for _=1, math.max(3, 20) do if not active() then return end task.wait(1) end
         end
         print("[PB] stopped.")
     end
 
     local function runHarvest(C)
         local function active() return alive() and Cfg.Harvest ~= false end
-        local function dbg(...) if C.Debug then print("[HARV]", ...) end end
+        local function dbg(...) if miscDebug() then print("[HARV]", ...) end end
 
         local P_Collect = Packet("CollectFruit")
         local MUTONLY={} for _,s in ipairs(C.MutationOnly or {}) do MUTONLY[tostring(s):lower()]=true end
@@ -325,8 +355,8 @@
             local plants=plot:FindFirstChild("Plants"); if not plants then return 0 end
             local now=tick(); local fired,scanned=0,0
             for _,plant in ipairs(plants:GetChildren()) do
-                if fired>=C.MaxPerSweep or not active() then break end
-                scanned=scanned+1; if scanned % C.YieldEvery == 0 then task.wait() end
+                if fired>=400 or not active() then break end
+                scanned=scanned+1; if scanned % 50 == 0 then task.wait() end
                 local seedName=tostring(plant:GetAttribute("SeedName") or ""):lower()
                 local mutOnly=MUTONLY[seedName]==true
                 local fruits=plant:FindFirstChild("Fruits") or plant:FindFirstChild("F")
@@ -336,12 +366,12 @@
                         if fruitId~=nil and ((not mutOnly) or mutationOf(fruit)~=nil) then
                             local plantId=fruit:GetAttribute("PlantId")
                             local age,maxAge=fruit:GetAttribute("Age"),fruit:GetAttribute("MaxAge")
-                            local ripeOk=(not C.RipeOnly) or (type(age)=="number" and type(maxAge)=="number" and age>=maxAge)
+                            local ripeOk=(type(age)=="number" and type(maxAge)=="number" and age>=maxAge)   -- always ripe-only
                             now=tick(); local cdOk=(not last_fire[fruitId]) or (now-last_fire[fruitId]>=FIRE_CD)
                             if plantId and ripeOk and cdOk then
                                 pcall(function() P_Collect:Fire(plantId, fruitId) end)
-                                last_fire[fruitId]=now; fired=fired+1; task.wait(C.FireDelay)
-                                if fired>=C.MaxPerSweep then break end
+                                last_fire[fruitId]=now; fired=fired+1; task.wait(0.08)
+                                if fired>=400 then break end
                             end
                         end
                     end
@@ -353,7 +383,7 @@
                         now=tick(); local cdOk=(not last_fire[plantId]) or (now-last_fire[plantId]>=FIRE_CD)
                         if plantId and ready and cdOk then
                             pcall(function() P_Collect:Fire(plantId, "") end)
-                            last_fire[plantId]=now; fired=fired+1; task.wait(C.FireDelay)
+                            last_fire[plantId]=now; fired=fired+1; task.wait(0.08)
                         end
                     end
                 end
@@ -368,16 +398,18 @@
             if not ok then
                 warn("[HARV] sweep error (recovered): "..tostring(fired))
             elseif fired and fired>0 then
-                print(("[HARV] sweep harvested %d"):format(fired))   
+                print(("[HARV] sweep harvested %d"):format(fired))
             end
-            for _=1, math.max(2, C.HarvestInterval) do if not active() then return end task.wait(1) end
+            -- NONSTOP (always on): re-sweep immediately when fruit was harvested; a tiny
+            -- breather only when nothing was ripe, so an empty garden isn't scanned every frame.
+            if fired and fired>0 then task.wait() else task.wait(0.5) end
         end
         print("[HARV] stopped.")
     end
 
     local function runSell(C)
         local function active() return alive() and Cfg.Sell ~= false end
-        local function dbg(...) if C.Debug then print("[SELL]", ...) end end
+        local function dbg(...) if miscDebug() then print("[SELL]", ...) end end
         local P_Sell = Packet("SellAll")
         local function fruitCount() return tonumber(lp:GetAttribute("FruitCount")) or 0 end
         local function maxCap()     return tonumber(lp:GetAttribute("MaxFruitCapacity")) or 100 end
@@ -391,24 +423,35 @@
         print(("[SELL] started; mode=%s%s  (capacity %d)")
             :format(fullMode and "sell-when-full" or "sell-always",
                     fullMode and (" threshold="..threshold()) or "", maxCap()))
-        while active() do
+        -- EVENT-DRIVEN: sell the INSTANT FruitCount crosses the threshold (no polling wait, no
+        -- post-sell delay). The 0.5s guard only dedups the burst while a sell is in flight
+        -- (FruitCount takes a server round-trip to drop) - the first sell is immediate.
+        local lastSell = 0
+        local function trySell()
+            if not active() then return end
             local fc = fruitCount()
-            local doSell = fullMode and (fc >= threshold()) or ((not fullMode) and fc > 0)
-            if doSell then
+            local hit = fullMode and (fc >= threshold()) or ((not fullMode) and fc > 0)
+            if hit and (os.clock() - lastSell) >= 0.5 then
+                lastSell = os.clock()
                 pcall(function() P_Sell:Fire() end)
-                dbg(("sold (fruit was %d/%d)"):format(fc, maxCap()))
-                task.wait(0.6)   
+                dbg(("sold (fruit was %d/%d, threshold %d)"):format(fc, maxCap(), threshold()))
             end
-            for _=1, math.max(1, C.CheckInterval or 3) do if not active() then return end task.wait(1) end
         end
+        local conn
+        pcall(function() conn = lp:GetAttributeChangedSignal("FruitCount"):Connect(trySell) end)
+        trySell()   -- in case the backpack is already full at start
+        while active() do trySell(); task.wait(2) end   -- light safety net; the event does the selling
+        if conn then pcall(function() conn:Disconnect() end) end
         print("[SELL] stopped.")
     end
 
     local function runSeedGrab(C)
-        local function active() return alive() and Cfg.SeedGrab ~= false end
-        local function dbg(...) if C.Debug then print("[SEEDGRAB]", ...) end end
+        local function active() return alive() and Cfg.CollectEventSeeds ~= false end
+        local function dbg(...) if miscDebug() then print("[SEEDGRAB]", ...) end end
         local function getRoot() local c=lp.Character; if not c then return nil end return c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso"), c end
-        local function teleportTo(pos) local _,c=getRoot(); if not c then return end pcall(function() c:PivotTo(CFrame.new(pos+Vector3.new(0, C.YOffset, 0))) end) end
+        local YOFF = 3.0   -- hardcoded teleport height offset
+        local function teleportTo(pos) local r,c=getRoot(); if not c then return end pcall(function() c:PivotTo(CFrame.new(pos+Vector3.new(0, YOFF, 0))) end)
+            if r then pcall(function() r.AssemblyLinearVelocity=Vector3.zero; r.AssemblyAngularVelocity=Vector3.zero end) end end  -- anti-fall
         local function spawnInfo(part)
             if part:GetAttribute("RainbowSeed")==true then return "Rainbow Seed","rainbow" end
             if part:GetAttribute("GoldSeed")==true then return "Gold Seed","gold" end
@@ -421,7 +464,15 @@
             end
             return nil,nil
         end
-        local function wanted(k) if k=="rainbow" then return C.GrabRainbow elseif k=="gold" then return C.GrabGold elseif k=="pack" then return C.GrabAllSeedPacks end return false end
+        -- accept both new (Collect*) and old (Grab*) key names; rainbow/gold default ON
+        -- (only OFF if explicitly false), packs default OFF. Prevents a rename/missing-key
+        -- mismatch from silently filtering every seed out (= "won't teleport").
+        local function wanted(k)
+            if k=="rainbow" then local v=C.CollectRainbow; if v==nil then v=C.GrabRainbow end; return v ~= false
+            elseif k=="gold" then local v=C.CollectGold;   if v==nil then v=C.GrabGold   end; return v ~= false
+            elseif k=="pack" then local v=C.CollectAllSeedPacks; if v==nil then v=C.GrabAllSeedPacks end; return v == true end
+            return false
+        end
         local function spawnPos(part) if part:IsA("BasePart") then return part.Position end local ok,cf=pcall(function() return part:GetPivot() end); if ok then return cf.Position end end
         local claiming={}; local skip={}   
         local function claimSpawn(part)
@@ -436,14 +487,15 @@
             if not (part.Parent and name) then claiming[part]=nil return end
             if not wanted(kind) then
                 dbg("skip (filtered):", name); skip[part]=true
-                if C.ReturnAfter and startCF then local _,ch=getRoot(); if ch then pcall(function() ch:PivotTo(startCF) end) end end
+                if startCF then local _,ch=getRoot(); if ch then pcall(function() ch:PivotTo(startCF) end) end end
                 claiming[part]=nil return
             end
             if not pos or pos.Magnitude<1 then local dl=os.clock()+1.5 repeat task.wait(); pos=spawnPos(part) until (pos and pos.Magnitude>=1) or os.clock()>dl or not part.Parent end
             if not (part.Parent and pos) then claiming[part]=nil return end
             print(("[SEEDGRAB] *** %s SPAWNED *** at %s - claiming"):format(name, tostring(pos)))
             local t0=os.clock()
-            while active() and part.Parent and (os.clock()-t0)<C.ClaimTimeout do
+            while active() and part.Parent and (os.clock()-t0)<2 do
+                grabUntil = os.clock() + 0.5   -- anchor-float during the grab (true anti-fall)
                 teleportTo(spawnPos(part) or pos)
                 for _,d in ipairs(part:GetDescendants()) do
                     if d:IsA("ProximityPrompt") and typeof(fireproximityprompt)=="function" then
@@ -451,10 +503,10 @@
                         pcall(function() fireproximityprompt(d) end)
                     elseif d:IsA("ClickDetector") and typeof(fireclickdetector)=="function" then pcall(function() fireclickdetector(d) end) end
                 end
-                task.wait(C.LoopGap)
+                task.wait(0.06)
             end
             if not part.Parent then print(("[SEEDGRAB] claimed %s"):format(name)) else dbg("claim timeout:", name) end
-            if C.ReturnAfter and startCF then local _,ch=getRoot(); if ch then pcall(function() ch:PivotTo(startCF) end) end end
+            if startCF then local _,ch=getRoot(); if ch then pcall(function() ch:PivotTo(startCF) end) end end
             claiming[part]=nil
         end
         local map=workspace:WaitForChild("Map",30)
@@ -469,20 +521,9 @@
                 if sp.FX then sp.FX.OnClientEvent:Connect(function() if active() then scanNow() end end) end
             end
         end)
-        task.spawn(function() while active() do scanNow(); task.wait(1) end end)
+        task.spawn(function() while active() do scanNow(); task.wait(0.5) end end)   
         scanNow()
-        if C.AntiAfk then
-            local okVIM,VIM=pcall(function() return game:GetService("VirtualInputManager") end)
-            local function jump()
-                if next(claiming) then return end
-                if okVIM and VIM then pcall(function() VIM:SendKeyEvent(true,Enum.KeyCode.Space,false,game); task.wait(0.06); VIM:SendKeyEvent(false,Enum.KeyCode.Space,false,game) end)
-                else local _,c=getRoot(); local h=c and c:FindFirstChildOfClass("Humanoid"); if h then pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end end
-            end
-            lp.Idled:Connect(function() if active() then jump() end end)
-            task.spawn(function() while active() do for _=1,math.max(5,C.AntiAfkInterval) do if not active() then return end task.wait(1) end jump() end end)
-            print(("[SEEDGRAB] anti-afk armed (JUMP only, every %ds; VIM=%s)"):format(C.AntiAfkInterval, tostring(okVIM and VIM~=nil)))
-        end
-        print(("[SEEDGRAB] started (rainbow=%s gold=%s allPacks=%s)"):format(tostring(C.GrabRainbow), tostring(C.GrabGold), tostring(C.GrabAllSeedPacks)))
+        print(("[SEEDGRAB] started (rainbow=%s gold=%s allPacks=%s)"):format(tostring(C.CollectRainbow), tostring(C.CollectGold), tostring(C.CollectAllSeedPacks)))
     end
 
     local function runMail(C)
@@ -490,11 +531,11 @@
         local RECIPIENT_USERNAME=C.TargetUsername; local RECIPIENT_USERID=C.TargetUserId
         local MESSAGE=C.MessageMail; local LIST_ITEM=C.ListItem
         local MAX_PER_ITEM=(C.MaxPerItem and C.MaxPerItem>0) and C.MaxPerItem or math.huge
-        local DRY_RUN=C.DryRun; local SEND_DEBOUNCE=C.SendDebounce; local MAX_ITEMS_PER_GIFT=C.MaxItemsPerGift
-        local SEND_WHEN_COUNT=C.SendWhenCount; local SEND_AMOUNT=C.SendAmount; local WATCH_INTERVAL=C.WatchInterval
+        local SEND_DEBOUNCE=5; local MAX_ITEMS_PER_GIFT=20
+        local SEND_WHEN_COUNT=C.SendWhenCount; local SEND_AMOUNT=C.SendAmount; local WATCH_INTERVAL=10
         local INCLUDE_FRUITS=false
         local ReplicaClient=require(RS.ClientModules.ReplicaClient)
-        print(string.rep("=",56)); print("GAG2 Auto Send Mail"..(DRY_RUN and "  [DRY RUN]" or "  [LIVE]")); print(string.rep("=",56))
+        print(string.rep("=",56)); print("GAG2 Auto Send Mail  [LIVE]"); print(string.rep("=",56))
         local PER_INSTANCE={ Pets=true, HarvestedFruits=true }
         local GIFTABLE={"Seeds","SeedPacks","Crates","Sprinklers","WateringCans","Mushrooms","Gnomes","Raccoons","Trowels","Props","Pets","HarvestedFruits"}
         local function normName(s) s=tostring(s):lower():gsub("^%s+",""):gsub("%s+$",""); s=s:gsub("%s*seed$",""); return s end
@@ -514,8 +555,9 @@
         local BLACKLIST={}; for _,nm in ipairs(C.Blacklist or {}) do BLACKLIST[normName(nm)]=true end
         local function resolveRecipient()
             if type(RECIPIENT_USERID)=="number" and RECIPIENT_USERID>0 then return RECIPIENT_USERID end
-            if type(RECIPIENT_USERNAME)~="string" or RECIPIENT_USERNAME=="" or RECIPIENT_USERNAME=="PutTargetUsernameHere" or RECIPIENT_USERNAME=="USERNAME" then
-                return nil, "set a real TargetUsername (placeholder rejected)" end
+            local _rl = (type(RECIPIENT_USERNAME)=="string" and RECIPIENT_USERNAME:lower():gsub("%s","")) or ""
+            if _rl=="" or _rl=="username" or _rl=="puttargetusernamehere" or _rl=="targetusername" then
+                return nil, "set a real TargetUsername (placeholder '"..tostring(RECIPIENT_USERNAME).."' rejected)" end
             for _,pl in ipairs(Players:GetPlayers()) do if pl.Name:lower()==RECIPIENT_USERNAME:lower() or pl.DisplayName:lower()==RECIPIENT_USERNAME:lower() then return pl.UserId end end
             local ok,info=pcall(function() return Packet("MailboxLookupPlayer"):Fire(RECIPIENT_USERNAME) end)
             if ok and type(info)=="table" and (info.UserId or info.userId) then return info.UserId or info.userId end
@@ -524,9 +566,11 @@
             if ok2 and type(uid)=="number" then return uid end
             return nil, "could not resolve '"..RECIPIENT_USERNAME.."'"
         end
+        local _psRep   -- cache the PlayerState replica (avoid re-scanning all replicas each pass)
         local function getInventory()
+            if _psRep and _psRep.Data and _psRep.Data.Inventory then return _psRep.Data.Inventory end
             local ok,reg=pcall(ReplicaClient.Test); if not ok then return nil end
-            for _,rep in pairs(reg.Replicas or {}) do if rep.Token=="PlayerState" and rep.Data and rep.Data.Inventory then return rep.Data.Inventory end end
+            for _,rep in pairs(reg.Replicas or {}) do if rep.Token=="PlayerState" and rep.Data and rep.Data.Inventory then _psRep=rep; return rep.Data.Inventory end end
         end
         local function nameAllowed(category, displayName)
             local nn=normName(displayName)
@@ -584,17 +628,12 @@
                     footer = { text = "GAG2 Auto-Mail " .. os.date("%Y-%m-%d %H:%M:%S") },
                 }},
             }, wc.MailMessageID, "Mail")
-            if ok and C.Debug then print("[MAIL] webhook posted") end
+            if ok and miscDebug() then print("[MAIL] webhook posted") end
         end
 
         local function doSendPass()
             local inv=getInventory(); if not inv then return 0 end
             local items=buildItems(inv); if #items==0 then return 0 end
-            if DRY_RUN then
-                print(("[MAIL] DRY_RUN - would send %d stack(s) to %s:"):format(#items, tostring(RECIPIENT_USERNAME)))
-                for _,it in ipairs(items) do print(("    %s: %s x%d (you have %s)"):format(it.Category, tostring(it._display), it.Count, tostring(it._have))) end
-                return 0
-            end
             local batches=chunk(items,MAX_ITEMS_PER_GIFT); local sent=0; local sentByName={}
             for bi,batch in ipairs(batches) do
                 local clean={}; for _,it in ipairs(batch) do table.insert(clean,{Category=it.Category,ItemKey=it.ItemKey,Count=it.Count}) end
@@ -619,7 +658,7 @@
 
     local function runWebhook(C)
         local function active() return alive() and Cfg.Webhook ~= false end
-        local function dbg(...) if C.Debug then print("[WEBHOOK]", ...) end end
+        local function dbg(...) if miscDebug() then print("[WEBHOOK]", ...) end end
         if C.Inventory == false then print("[WEBHOOK] ready (inventory snapshot off; mail webhook still active)"); return end
         local ReplicaClient = require(RS.ClientModules.ReplicaClient)
         local SEED_CATS = { "Seeds" }
@@ -680,6 +719,324 @@
         print("[WEBHOOK] inventory snapshot stopped.")
     end
 
+    local function runBuyGears(C)
+        local function active() return alive() and Cfg.BuyGears ~= false end
+        local function dbg(...) if miscDebug() then print("[BUYGEAR]", ...) end end
+        local Net = require(RS.SharedModules.Networking)
+        local PSC = require(RS.ClientModules.PlayerStateClient)
+        local replica = PSC:GetLocalReplica() or PSC:WaitForLocalReplica(PSC, 30)
+        if not replica then warn("[BUYGEAR] PlayerState replica unavailable - aborting"); return end
+        local function data() return replica.Data end
+        local function sheckles() local d=data(); return (d and d.Sheckles) or 0 end
+
+        local GearShopData = require(RS.SharedModules.GearShopData)
+        local GEAR = {}   
+        local function scanGear(t, depth)
+            if depth > 3 then return end
+            for _,e in pairs(t) do
+                if type(e)=="table" then
+                    if e.ItemName then GEAR[e.ItemName] = { Cost = tonumber(e.Cost) or 0, Rarity = tostring(e.Rarity or "") }
+                    else scanGear(e, depth+1) end
+                end
+            end
+        end
+        scanGear(GearShopData, 0)
+
+        local SS = RS:WaitForChild("StockValues", 20) and RS.StockValues:WaitForChild("GearShop", 20)
+        if not SS then warn("[BUYGEAR] StockValues.GearShop not found - aborting"); return end
+        local ITEMS = SS:WaitForChild("Items", 20)
+        local function stockMax(n) local v=ITEMS:FindFirstChild(n); return (v and v:IsA("ValueBase") and v.Value) or 0 end
+        local function purchased(n) local d=data(); local g=d and d.PurchasedThisRestock and d.PurchasedThisRestock.Gears; return (g and g[n]) or 0 end
+        local function remaining(n) return math.max(0, stockMax(n)-purchased(n)) end
+
+        local rarWant = {}; for _,r in ipairs(C.Rarities or {}) do rarWant[tostring(r):lower()] = true end
+        local hasRar = next(rarWant) ~= nil
+        local function buildWanted()
+            local want = {}
+            for _,name in ipairs(C.ListGear or {}) do want[name] = true end
+            if hasRar then for name,info in pairs(GEAR) do if rarWant[info.Rarity:lower()] and stockMax(name)>0 then want[name]=true end end end
+            return want
+        end
+        local function buyOne(name)
+            local info = GEAR[name]
+            if not info then warn(("[BUYGEAR] unknown gear '%s' (check spelling)"):format(name)); return 0 end
+            local cost, bought = info.Cost, 0
+            while active() do
+                if remaining(name)<=0 then break end
+                if sheckles()<cost then break end
+                local before = purchased(name)
+                pcall(function() Net.GearShop.PurchaseGear:Fire(name) end)
+                local t0=os.clock(); repeat task.wait(0.1) until purchased(name)>before or not active() or os.clock()-t0>1.5
+                if purchased(name)>before then bought=bought+1 else break end
+                task.wait(0.15)
+            end
+            return bought
+        end
+        print("[BUYGEAR] started")
+        while active() do
+            local want = buildWanted()
+            for name in pairs(want) do
+                if not active() then break end
+                if remaining(name)>0 then local b=buyOne(name); if b>0 then print(("[BUYGEAR] bought %s x%d (Sheckles ~%d)"):format(name,b,math.floor(sheckles()))) end end
+            end
+            for _=1, math.max(2, 20 or 6) do if not active() then return end task.wait(1) end
+        end
+        print("[BUYGEAR] stopped.")
+    end
+
+    local function runBuyPets(C)
+        local function active() return alive() and Cfg.BuyPets ~= false end
+        local function dbg(...) if miscDebug() then print("[BUYPET]", ...) end end
+        local Net = require(RS.SharedModules.Networking)
+        local PSC = require(RS.ClientModules.PlayerStateClient)
+        local replica = PSC:GetLocalReplica() or PSC:WaitForLocalReplica(PSC, 30)
+        if not replica then warn("[BUYPET] PlayerState replica unavailable - aborting"); return end
+        local function sheckles() local d=replica.Data; return (d and d.Sheckles) or 0 end
+
+        local map = workspace:WaitForChild("Map", 30)
+        local refFolder = map and map:WaitForChild("WildPetRef", 30)
+        if not refFolder then warn("[BUYPET] Map.WildPetRef not found - aborting"); return end
+
+        local function root() local c=lp.Character; return c and c:FindFirstChild("HumanoidRootPart") end
+        local function tpTo(pos) local h=root(); if not h then return false end pcall(function() h.CFrame=CFrame.new(pos+Vector3.new(0,4,0)); h.AssemblyLinearVelocity=Vector3.zero; h.AssemblyAngularVelocity=Vector3.zero end); return true end  -- anti-fall
+
+        local spWant, raWant = {}, {}
+        for _,s in ipairs(C.ListPets or {}) do spWant[tostring(s):lower()] = true end
+        for _,r in ipairs(C.Rarities or {}) do raWant[tostring(r):lower()] = true end
+        local hasSp, hasRa = next(spWant)~=nil, next(raWant)~=nil
+
+        pcall(function() Net.Pets.WildPetTameResult.OnClientEvent:Connect(function(part,val) if active() then dbg(("buy result: %s -> %s"):format(part and part.Name or "?", tostring(val))) end end) end)
+
+        local RANK = { common=1, uncommon=2, rare=3, super=4, legendary=5, mythic=6, divine=7, secret=8 }
+        local function rarityRank(part) return RANK[tostring(part:GetAttribute("Rarity") or ""):lower()] or 0 end
+
+        local handled  = {}   
+        local cooldown = {}   
+
+        local function wantPet(part)
+            if part:GetAttribute("OwnerUserId") ~= 0 then return false end   
+            local pn = tostring(part:GetAttribute("PetName") or "")
+            local rr = tostring(part:GetAttribute("Rarity") or "")
+            if hasSp and not spWant[pn:lower()] then return false end
+            if hasRa and not raWant[rr:lower()] then return false end
+            local price = tonumber(part:GetAttribute("Price")) or 0
+            if sheckles() < price then return false end
+            return true, pn, rr, price
+        end
+        local function claimWild(part)
+            local ok, pn, rr, price = wantPet(part)
+            if not ok then return false end
+            local home; do local h=root(); if h then home=h.Position end end  
+            pcall(function() Net.Pets.WildPetTame:Fire(part) end)
+            task.wait(0.1)
+            if part.Parent and (part:GetAttribute("OwnerUserId") or 0) == 0 then
+                grabUntil = os.clock() + 0.5   -- anchor-float from the moment we teleport onto the pet
+                local p = select(2, pcall(function() return part.Position end))
+                if typeof(p)=="Vector3" then tpTo(p); task.wait(0.1) end
+                pcall(function() Net.Pets.WildPetTame:Fire(part) end)
+            end
+            local t0 = os.clock()
+            while active() and part.Parent and (part:GetAttribute("OwnerUserId") or 0) == 0 and os.clock()-t0 <= 3 do
+                grabUntil = os.clock() + 0.5   -- anchor-float during the grab (true anti-fall)
+                do local p = select(2, pcall(function() return part.Position end)); if typeof(p)=="Vector3" then tpTo(p) end end
+                task.wait(0.1)
+            end
+            if home then tpTo(home) end
+            local mine = (not part.Parent) or (part:GetAttribute("OwnerUserId") == lp.UserId)
+            if mine then
+                handled[part] = true
+                print(("[BUYPET] claimed %s (%s) ~%d Sheckles"):format(pn,rr,price))
+            else
+                cooldown[part] = os.clock() + 3
+                dbg(("claim not confirmed for %s (%s)"):format(pn,rr))
+            end
+            return mine
+        end
+        local dirty = false
+        refFolder.ChildAdded:Connect(function() if active() then dirty = true end end)
+        print("[BUYPET] started (event-driven + rarity priority)")
+        while active() do
+            local best, bestRank
+            for _,part in ipairs(refFolder:GetChildren()) do
+                if part:IsA("BasePart") and not handled[part] and not (cooldown[part] and os.clock() < cooldown[part]) then
+                    if select(1, wantPet(part)) then
+                        local rk = rarityRank(part)
+                        if not best or rk > bestRank then best, bestRank = part, rk end
+                    end
+                end
+            end
+            for p in pairs(handled)  do if not p.Parent then handled[p]  = nil end end
+            for p in pairs(cooldown) do if not p.Parent then cooldown[p] = nil end end
+            if best then
+                claimWild(best); task.wait(0.3)
+            else
+                local idleFor, waited = math.max(0.5, 20 or 1), 0
+                while active() and not dirty and waited < idleFor do task.wait(0.1); waited = waited + 0.1 end
+                dirty = false
+            end
+        end
+        print("[BUYPET] stopped.")
+    end
+
+    local function runExpandPlot(C)
+        local function active() return alive() and Cfg.ExpandPlot ~= false end
+        local function dbg(...) if miscDebug() then print("[EXPAND]", ...) end end
+        local Net = require(RS.SharedModules.Networking)
+        local PSC = require(RS.ClientModules.PlayerStateClient)
+        local replica = PSC:GetLocalReplica() or PSC:WaitForLocalReplica(PSC, 30)
+        if not replica then warn("[EXPAND] PlayerState replica unavailable - aborting"); return end
+        local function sheckles() local d=replica.Data; return (d and d.Sheckles) or 0 end
+        local function owned() return tonumber(replica.Data.OwnedExpansions) or 1 end
+
+        local EP = require(RS.SharedData.ExpansionPrices)
+        local GardenFlags; pcall(function() GardenFlags = require(RS.SharedModules.Flags.GardenFlags) end)
+        local maxIdx = #EP
+        local function nextInfo()
+            local o = owned(); local nIdx = o + 1; local e = EP[nIdx]
+            if not e then return nil, nil, o end
+            local price = tonumber(e.Price) or 0
+            if GardenFlags and GardenFlags.ExpansionPriceOverrides then
+                local ok, ov = pcall(function() return GardenFlags.ExpansionPriceOverrides:Get() end)
+                if ok and type(ov)=="table" and ov[tostring(nIdx)] then price = tonumber(ov[tostring(nIdx)]) or price end
+            end
+            return nIdx, price, o
+        end
+        print("[EXPAND] started")
+        while active() do
+            local target = math.min(tonumber(C.TargetExpansions) or maxIdx, maxIdx)
+            local nIdx, price, o = nextInfo()
+            while active() and nIdx and o < target and sheckles() >= price do
+                local before = o
+                pcall(function() Net.Actions.ExpandGarden:Fire() end)
+                local t0=os.clock(); repeat task.wait(0.2) until owned()>before or not active() or os.clock()-t0>5
+                if owned()>before then print(("[EXPAND] expanded -> %d/%d (cost ~%d)"):format(owned(), target, price))
+                else dbg("expand not confirmed (afford/max?)"); break end
+                nIdx, price, o = nextInfo()
+            end
+            for _=1, math.max(3, 20 or 10) do if not active() then return end task.wait(1) end
+        end
+        print("[EXPAND] stopped.")
+    end
+
+    local function runBuySlot(C)
+        local function active() return alive() and Cfg.BuySlot ~= false end
+        local function dbg(...) if miscDebug() then print("[SLOT]", ...) end end
+        local Net = require(RS.SharedModules.Networking)
+        local PSC = require(RS.ClientModules.PlayerStateClient)
+        local replica = PSC:GetLocalReplica() or PSC:WaitForLocalReplica(PSC, 30)
+        if not replica then warn("[SLOT] PlayerState replica unavailable - aborting"); return end
+        local function sheckles() local d=replica.Data; return (d and d.Sheckles) or 0 end
+
+        local SP = require(RS.SharedData.PetSlotPrices)
+        local baseMax = tonumber(SP.BaseMax) or 3
+        local absMax  = tonumber(SP.AbsoluteMax) or 6
+        local prices  = SP.Prices or {}
+        local function maxPets() return tonumber(lp:GetAttribute("MaxEquippedPets")) or baseMax end
+        local function nextPrice()
+            local cur = maxPets(); if cur >= absMax then return nil end
+            return tonumber(prices[(cur-baseMax)+1]) or 0
+        end
+        print("[SLOT] started")
+        while active() do
+            local target = math.min(tonumber(C.TargetSlots) or absMax, absMax)
+            local price = nextPrice()
+            while active() and price and maxPets()<target and sheckles()>=price do
+                local before = maxPets()
+                pcall(function() Net.Pets.RequestPurchasePetSlot:Fire() end)
+                local t0=os.clock(); repeat task.wait(0.2) until maxPets()>before or not active() or os.clock()-t0>5
+                if maxPets()>before then print(("[SLOT] bought pet slot -> %d/%d (cost ~%d)"):format(maxPets(),target,price))
+                else dbg("slot buy not confirmed (afford/max?)"); break end
+                price = nextPrice()
+            end
+            for _=1, math.max(3, 20 or 10) do if not active() then return end task.wait(1) end
+        end
+        print("[SLOT] stopped.")
+    end
+
+    local function runEquipPets(C)
+        local function active() return alive() and Cfg.EquipPets ~= false end
+        local function dbg(...) if miscDebug() then print("[EQUIP]", ...) end end
+        local Net = require(RS.SharedModules.Networking)
+        local PSC = require(RS.ClientModules.PlayerStateClient)
+        local replica = PSC:GetLocalReplica() or PSC:WaitForLocalReplica(PSC, 30)
+        if not replica then warn("[EQUIP] PlayerState replica unavailable - aborting"); return end
+
+        local want = {}; for _,n in ipairs(C.ListEquip or {}) do want[n] = (want[n] or 0) + 1 end
+        local wantRar = {}; for _,r in ipairs(C.EquipRarities or {}) do wantRar[tostring(r):lower()] = true end
+        local hasRar = next(wantRar) ~= nil
+        if next(want)==nil and not hasRar then warn("[EQUIP] ListEquip + EquipRarities both empty - aborting"); return end
+
+        local PetData = require(RS.SharedData.PetData)   
+        local function petRarity(name) local e=PetData[name]; return (e and tostring(e.Rarity or "")) or "" end
+        local function rarWanted(name) return hasRar and wantRar[petRarity(name):lower()] == true end
+
+        local function pets() local d=replica.Data; return (d and d.Inventory and d.Inventory.Pets) or {} end
+        local function equippedCount(n) local c=0 for _,p in pairs(pets()) do if p.Name==n and p.Equipped then c=c+1 end end return c end
+        local function totalEquipped() local c=0 for _,p in pairs(pets()) do if p.Equipped then c=c+1 end end return c end
+        local function haveUnequipped(n) for _,p in pairs(pets()) do if p.Name==n and not p.Equipped then return true end end return false end
+        local function isWanted(n) return (want[n] or 0) > 0 or rarWanted(n) end
+        local function equipOne(name)
+            local before = equippedCount(name)
+            pcall(function() Net.Pets.RequestEquipByName:Fire(name) end)
+            local t0=os.clock(); repeat task.wait(0.2) until equippedCount(name)>before or not active() or os.clock()-t0>3
+            if equippedCount(name)>before then print(("[EQUIP] equipped %s (%s)"):format(name, petRarity(name))); return true end
+            dbg("equip not confirmed for "..name); return false
+        end
+        print("[EQUIP] started")
+        while active() do
+            local cap = tonumber(lp:GetAttribute("MaxEquippedPets")) or 3
+            for _,p in pairs(pets()) do
+                if not active() then break end
+                if p.Equipped and not isWanted(p.Name) then
+                    pcall(function() Net.Pets.RequestUnequipByName:Fire(p.Name) end); task.wait(0.3)
+                end
+            end
+            for name,n in pairs(want) do
+                if not active() then break end
+                while active() and equippedCount(name)<n and totalEquipped()<cap and haveUnequipped(name) do
+                    if not equipOne(name) then break end
+                    task.wait(0.2)
+                end
+            end
+            if hasRar then
+                while active() and totalEquipped()<cap do
+                    local target
+                    for _,p in pairs(pets()) do
+                        if (not p.Equipped) and rarWanted(p.Name) and not ((want[p.Name] or 0) > 0) then target=p.Name; break end
+                    end
+                    if not target then break end
+                    if not equipOne(target) then break end
+                    task.wait(0.2)
+                end
+            end
+            for _=1, math.max(3, 20 or 8) do if not active() then return end task.wait(1) end
+        end
+        print("[EQUIP] stopped.")
+    end
+
+    local function runRedeemCodes(C)
+        local function dbg(...) if miscDebug() then print("[CODE]", ...) end end
+        local Net = require(RS.SharedModules.Networking)
+        local codes = C.ListCodes or {}
+        if #codes == 0 then dbg("no codes listed - skip"); return end
+        print(("[CODE] redeeming %d code(s)"):format(#codes))
+        for _, code in ipairs(codes) do
+            if not alive() then return end
+            code = tostring(code):gsub("^%s+",""):gsub("%s+$","")
+            if code ~= "" then
+                local ok, res = pcall(function() return Net.Settings.SubmitCode:InvokeServer(code) end)
+                if ok then
+                    print(("[CODE] '%s' -> %s"):format(code, tostring(res)))
+                else
+                    pcall(function() Net.Settings.SubmitCode:Fire(code) end)  
+                    print(("[CODE] '%s' submitted (fire)"):format(code))
+                end
+                task.wait(1.5)   
+            end
+        end
+        print("[CODE] done.")
+    end
+
     local function runGuard()
         local function active() return alive() end
         local function isNight()
@@ -704,30 +1061,52 @@
         end
 
         task.spawn(function()
-            local t0 = os.clock(); local skipped = false
-            while active() and os.clock()-t0 < 12 do
-                if lp:GetAttribute("CutsceneInputBlocked") == true then pcall(function() lp:SetAttribute("CutsceneInputBlocked", false) end); skipped = true end
-                if lp:GetAttribute("OfflineCutscenePlaying") == true then pcall(function() lp:SetAttribute("OfflineCutscenePlaying", false) end); skipped = true end
-                local pg = lp:FindFirstChildOfClass("PlayerGui"); local lg = pg and pg:FindFirstChild("LoadingGui")
-                if lg and lg:IsA("ScreenGui") and lg.Enabled then pcall(function() lg.Enabled = false end); skipped = true end
-                local cam = workspace.CurrentCamera
-                if cam and cam.CameraType == Enum.CameraType.Scriptable then
-                    local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
-                    pcall(function() cam.CameraType = Enum.CameraType.Custom; if hum then cam.CameraSubject = hum end; cam.FieldOfView = 70 end)
-                    skipped = true
-                end
-                task.wait(0.2)
+            local VIM; pcall(function() VIM = game:GetService("VirtualInputManager") end)
+            if not VIM then return end
+            local function pressAnyKey()
+                pcall(function()
+                    VIM:SendKeyEvent(true,  Enum.KeyCode.Space, false, game)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                    VIM:SendMouseButtonEvent(100,100,0,true,  game, 0)
+                    VIM:SendMouseButtonEvent(100,100,0,false, game, 0)
+                end)
             end
-            if skipped then print("[GUARD] loading/cutscene auto-skipped") end
+            local t0, announced = os.clock(), false
+            while active() and os.clock()-t0 < 90 do
+                if lp:GetAttribute("LoadingScreenActive") == true then
+                    if not announced then print("[GUARD] auto-pressing through loading screen"); announced = true end
+                    pressAnyKey(); task.wait(0.25)
+                elseif lp:GetAttribute("OfflineCutscenePlaying") == true then
+                    pcall(function() VIM:SendMouseButtonEvent(100,100,0,true,game,0) end)
+                    local h = os.clock()
+                    while active() and lp:GetAttribute("OfflineCutscenePlaying")==true and os.clock()-h < 1.5 do task.wait(0.05) end
+                    pcall(function() VIM:SendMouseButtonEvent(100,100,0,false,game,0) end)
+                    print("[GUARD] held to skip offline-growth cutscene"); task.wait(0.5)
+                else
+                    task.wait(0.3)
+                end
+            end
         end)
 
         task.spawn(function()
+            local function trulySpawned()
+                if lp:GetAttribute("LoadingScreenActive") == true then return false end
+                if lp:GetAttribute("OfflineCutscenePlaying") == true then return false end
+                if lp:GetAttribute("CutsceneInputBlocked") == true then return false end
+                local char = lp.Character
+                local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+                local hum  = char and char:FindFirstChildOfClass("Humanoid")
+                if not (hrp and hum) then return false end
+                if hum.Health <= 0 then return false end
+                local st = hum:GetState()
+                if st == Enum.HumanoidStateType.Dead or st == Enum.HumanoidStateType.None then return false end
+                return true
+            end
             local t0 = os.clock()
-            repeat task.wait(0.3)
-            until not active() or (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp:GetAttribute("CutsceneInputBlocked") ~= true) or os.clock()-t0 > 15
+            while active() and not trulySpawned() and os.clock()-t0 < 120 do task.wait(0.3) end
             if not active() then return end
-            task.wait(0.5)
-            pivotCenter("after load")
+            task.wait(1.0)   
+            pivotCenter("after spawn")
             local wasNight = nil
             while active() do
                 local n = isNight()
@@ -736,26 +1115,235 @@
                 for _=1, (n and 12 or 3) do if not active() then return end task.wait(1) end
             end
         end)
-        print("[GUARD] started (auto-skip loading + garden-center pivot + night hold)")
+        print("[GUARD] started (safe hold-to-skip + garden-center pivot + night hold)")
+    end
+
+    local function runMisc(C)
+        local function active() return alive() and Cfg.Misc ~= false end
+        local Lighting = game:GetService("Lighting")
+        local conns       = {}
+        local removed     = {}   -- [plantsFolder] = plot (restore other gardens on stop)
+        local hiddenChars = {}   -- [character] = parent (restore other players on stop)
+        local myPlotName  = "Plot"..tostring(lp:GetAttribute("PlotId"))
+
+        if C.FpsBoost ~= false then
+            pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
+            pcall(function() game:GetService("UserSettings"):GetService("UserGameSettings").SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1 end)
+            pcall(function() Lighting.GlobalShadows = false end)
+            pcall(function() Lighting.Technology = Enum.Technology.Compatibility end)
+            for _,e in ipairs(Lighting:GetDescendants()) do
+                if e:IsA("PostEffect") or e:IsA("Atmosphere") then pcall(function() e.Enabled = false end) end
+            end
+            local ter = workspace:FindFirstChildOfClass("Terrain")
+            if ter then pcall(function() ter.WaterWaveSize=0; ter.WaterWaveSpeed=0; ter.WaterReflectance=0; ter.WaterTransparency=0.9; ter.Decoration=false end) end
+            -- cheaper lighting: kill image-based lighting + clouds (Brightness left alone to avoid a dark screen)
+            pcall(function() Lighting.EnvironmentDiffuseScale = 0; Lighting.EnvironmentSpecularScale = 0 end)
+            if ter then local cl = ter:FindFirstChildOfClass("Clouds"); if cl then pcall(function() cl:Destroy() end) end end
+
+            local function removePlot(plot)
+                if plot.Name == myPlotName then return end
+                local pf = plot:FindFirstChild("Plants")
+                if pf and not removed[pf] then removed[pf] = plot; pcall(function() pf.Parent = nil end) end
+            end
+            local gardens = workspace:WaitForChild("Gardens", 30)
+            if gardens then
+                for _,plot in ipairs(gardens:GetChildren()) do if active() then removePlot(plot) end end
+                conns[#conns+1] = gardens.ChildAdded:Connect(function(plot)
+                    if active() and plot.Name ~= myPlotName then
+                        local pf = plot:WaitForChild("Plants", 30)
+                        if pf and active() then removePlot(plot) end
+                    end
+                end)
+                conns[#conns+1] = gardens.DescendantAdded:Connect(function(d)
+                    if active() and d.Name=="Plants" and d.Parent and d.Parent.Name~=myPlotName and d.Parent.Parent==gardens then
+                        removed[d]=d.Parent; pcall(function() d.Parent=nil end)
+                    end
+                end)
+            end
+
+            local function killFx(d)
+                if d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Smoke") or d:IsA("Fire") or d:IsA("Sparkles") then
+                    pcall(function() d.Enabled = false end)
+                elseif d:IsA("BasePart") then
+                    pcall(function() d.LocalTransparencyModifier = 1; d.CastShadow = false end)
+                end
+            end
+            for _,fn in ipairs({"RainDrops","RainSplashes","LightningEffects","StormRainDrops","StormSplashes"}) do
+                local f = workspace:FindFirstChild(fn)
+                if f then
+                    for _,d in ipairs(f:GetDescendants()) do killFx(d) end
+                    conns[#conns+1] = f.DescendantAdded:Connect(function(d) if active() then killFx(d) end end)
+                end
+            end
+            for _,ln in ipairs({"RainEffect","LightningEffect","RainbowEffect","FlameEffect","StarEffect"}) do
+                local e = Lighting:FindFirstChild(ln)
+                if e and e:IsA("PostEffect") then
+                    pcall(function() e.Enabled = false end)
+                    conns[#conns+1] = e:GetPropertyChangedSignal("Enabled"):Connect(function() if active() and e.Enabled then pcall(function() e.Enabled=false end) end end)
+                end
+            end
+
+            local function flatten(d)
+                if d:IsA("BasePart") then
+                    pcall(function() d.Material = Enum.Material.SmoothPlastic; d.Reflectance = 0; d.CastShadow = false end)
+                    if d:IsA("MeshPart") then pcall(function() d.TextureID = "" end) end       -- mesh texture
+                elseif d:IsA("SpecialMesh") then pcall(function() d.TextureId = "" end)          -- legacy mesh texture
+                elseif d:IsA("Decal") or d:IsA("Texture") then pcall(function() d.Transparency = 1 end)
+                elseif d:IsA("SurfaceAppearance") then pcall(function() d:Destroy() end)         -- PBR maps
+                elseif d:IsA("Sound") or d:IsA("SoundGroup") then pcall(function() d.Volume = 0 end)   -- mute SFX/music
+                elseif d:IsA("ParticleEmitter") or d:IsA("Trail") or d:IsA("Beam") or d:IsA("Smoke") or d:IsA("Fire") or d:IsA("Sparkles") then
+                    pcall(function() d.Enabled = false end)                                       -- kill ALL particles/fx
+                end
+            end
+            local function flattenSubtree(root)
+                if not root then return end
+                local n = 0
+                for _,d in ipairs(root:GetDescendants()) do
+                    if not active() then return end
+                    flatten(d); n = n + 1; if n % 300 == 0 then task.wait() end
+                end
+            end
+            -- mute sounds in SoundService (outside workspace) + new ones there
+            for _,s in ipairs(game:GetService("SoundService"):GetDescendants()) do flatten(s) end
+            conns[#conns+1] = game:GetService("SoundService").DescendantAdded:Connect(function(d) if active() then flatten(d) end end)
+            -- keep new workspace instances low-poly/quiet (scoped to workspace, not game-wide = less overhead)
+            conns[#conns+1] = workspace.DescendantAdded:Connect(function(d) if active() then flatten(d) end end)
+            task.spawn(function()
+                flattenSubtree(workspace)   -- whole map + your garden + decorations + every visible texture
+                print("[MISC] low-poly + sound-mute applied (whole workspace)")
+            end)
+
+            -- (#2) nuke transient cosmetic VFX models (harvest/sell pops, blizzard beams); they
+            -- respawn constantly with nonstop harvest, so removing them on spawn frees real FPS
+            local JUNK = { PopVFXModel = true, BlizzardBeams = true, PopVFX = true }
+            local function killJunk(c) if JUNK[c.Name] then pcall(function() c:Destroy() end) end end
+            for _,c in ipairs(workspace:GetChildren()) do killJunk(c) end
+            conns[#conns+1] = workspace.ChildAdded:Connect(function(c) if active() then killJunk(c) end end)
+
+            -- (#4) hide OTHER players' characters: un-parent them (transparency wouldn't free FPS).
+            -- Restored on stop. If it ever causes client errors, just turn Misc/FpsBoost off.
+            local Plrs = game:GetService("Players")
+            local function hideChar(ch) if ch and ch.Parent then hiddenChars[ch] = ch.Parent; pcall(function() ch.Parent = nil end) end end
+            local function onPlr(p)
+                if p == lp then return end
+                if p.Character then hideChar(p.Character) end
+                conns[#conns+1] = p.CharacterAdded:Connect(function(ch) if active() then task.wait(0.3); hideChar(ch) end end)
+            end
+            for _,p in ipairs(Plrs:GetPlayers()) do onPlr(p) end
+            conns[#conns+1] = Plrs.PlayerAdded:Connect(function(p) if active() then onPlr(p) end end)
+
+            do local n=0 for _ in pairs(removed) do n=n+1 end
+               print(("[MISC] fps boost applied (quality lowest, shadows/effects off, %d other gardens removed, particles+weather off, sfx muted)"):format(n)) end
+        end
+
+        -- CHARACTER GUARD (always on): one Heartbeat that
+        --   * ANCHORS your HRP while it's NIGHT/moon (freeze: exploit flings can't throw you out of
+        --     the garden, and other players can't shove you) OR while a grab is running (true
+        --     anti-gravity = zero fall, not just velocity-zero),
+        --   * otherwise CLAMPS abnormal velocity (anti-fling) so you can't be launched.
+        -- Anchoring still lets the auto-grabbers set CFrame (teleport works on anchored parts).
+        do
+            local RunService = game:GetService("RunService")
+            local MAXV = 100
+            conns[#conns+1] = RunService.Heartbeat:Connect(function()
+                if not active() then return end
+                local ch = lp.Character
+                local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                local w = workspace:GetAttribute("ActiveWeather")
+                local night = type(w) == "string" and w:lower():find("moon") ~= nil
+                local hold = night or (os.clock() < grabUntil)
+                if hrp.Anchored ~= hold then pcall(function() hrp.Anchored = hold end) end
+                if not hold then
+                    if hrp.AssemblyLinearVelocity.Magnitude  > MAXV then pcall(function() hrp.AssemblyLinearVelocity  = Vector3.zero end) end
+                    if hrp.AssemblyAngularVelocity.Magnitude > MAXV then pcall(function() hrp.AssemblyAngularVelocity = Vector3.zero end) end
+                end
+            end)
+            print("[MISC] character guard armed (freeze on night + anti-gravity on grab + anti-fling)")
+        end
+
+        if C.AntiAfk then
+            local okVIM, VIM = pcall(function() return game:GetService("VirtualInputManager") end)
+            local function jump()
+                if okVIM and VIM then
+                    pcall(function() VIM:SendKeyEvent(true,Enum.KeyCode.Space,false,game); task.wait(0.06); VIM:SendKeyEvent(false,Enum.KeyCode.Space,false,game) end)
+                else
+                    local c = lp.Character; local h = c and c:FindFirstChildOfClass("Humanoid")
+                    if h then pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end
+                end
+            end
+            conns[#conns+1] = lp.Idled:Connect(function() if active() then jump() end end)
+            task.spawn(function() while active() do for _=1, math.max(5, 600) do if not active() then return end task.wait(1) end jump() end end)
+            print(("[MISC] anti-afk armed (jump every %ds; VIM=%s)"):format(600, tostring(okVIM and VIM~=nil)))
+        end
+
+        if C.AutoReconnect then
+            local TP = game:GetService("TeleportService")
+            local GuiService = game:GetService("GuiService")
+            local rejoining = false
+            local function rejoin()
+                if rejoining then return end; rejoining = true
+                task.wait(0.5)
+                pcall(function() TP:Teleport(game.PlaceId, lp) end)
+            end
+            conns[#conns+1] = GuiService.ErrorMessageChanged:Connect(function(msg)
+                if msg and tostring(msg) ~= "" then task.spawn(rejoin) end
+            end)
+            print("[MISC] auto-reconnect armed (note: a hard network drop can kill the VM before it fires)")
+        end
+
+        if C.RedeemCodes then task.spawn(runRedeemCodes, C) end
+
+        while active() do task.wait(2) end
+        for _,c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+        for pf,plot in pairs(removed) do pcall(function() pf.Parent = plot end) end          -- restore other gardens
+        for ch,par in pairs(hiddenChars) do pcall(function() ch.Parent = par end) end        -- restore other players
+        pcall(function() local h = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart"); if h then h.Anchored = false end end)  -- never leave frozen
+        print("[MISC] stopped (other gardens + players restored, character unfrozen)")
     end
 
     print("========================================================")
-    print(("GAG2 ALL-IN-ONE  PlantBuy=%s Harvest=%s Sell=%s SeedGrab=%s Mail=%s Webhook=%s")
-        :format(tostring(Cfg.PlantBuy), tostring(Cfg.Harvest), tostring(Cfg.Sell), tostring(Cfg.SeedGrab), tostring(Cfg.Mail), tostring(Cfg.Webhook)))
+    print(("GAG2 ALL-IN-ONE  Plant=%s Harvest=%s Sell=%s CollectEventSeeds=%s Mail=%s Webhook=%s Misc=%s")
+        :format(tostring(Cfg.Plant), tostring(Cfg.Harvest), tostring(Cfg.Sell), tostring(Cfg.CollectEventSeeds), tostring(Cfg.Mail), tostring(Cfg.Webhook), tostring(Cfg.Misc)))
+    print(("  +BuyGears=%s BuyPets=%s ExpandPlot=%s BuySlot=%s EquipPets=%s")
+        :format(tostring(Cfg.BuyGears), tostring(Cfg.BuyPets), tostring(Cfg.ExpandPlot), tostring(Cfg.BuySlot), tostring(Cfg.EquipPets)))
     print("  Stop all: getgenv().__GAG2_ALL=false")
     print("========================================================")
 
-    if Cfg.PlantBuy then task.spawn(function() local ok,err=pcall(runPlantBuy, Cfg.PlantBuyConfig or {}); if not ok then warn("[ALL] plant+buy crashed: "..tostring(err)) end end) end
-    if Cfg.Harvest  then task.spawn(function()
-        while alive() and Cfg.Harvest ~= false do
-            local ok,err = pcall(runHarvest, Cfg.HarvestConfig or {})
-            if not ok then warn("[ALL] harvest crashed: "..tostring(err).." - restarting in 3s") end
-            if not (alive() and Cfg.Harvest ~= false) then break end
-            task.wait(3)
+    task.spawn(function() local ok,err=pcall(runGuard); if not ok then warn("[ALL] guard crashed: "..tostring(err)) end end)
+
+    task.spawn(function()
+        local function ready()
+            if not alive() then return false end
+            local char = lp.Character
+            if not (char and char:FindFirstChild("HumanoidRootPart")) then return false end
+            if lp:GetAttribute("LoadingScreenActive") == true then return false end      -- still on loading screen
+            if lp:GetAttribute("OfflineCutscenePlaying") == true then return false end    -- offline cutscene playing
+            local plot = getPlot(); if not (plot and plot:FindFirstChild("Plants")) then return false end
+            return true
         end
-    end) end
-    if Cfg.Sell     then task.spawn(function() local ok,err=pcall(runSell,     Cfg.SellConfig     or {}); if not ok then warn("[ALL] sell crashed: "..tostring(err)) end end) end
-    if Cfg.SeedGrab then task.spawn(function() local ok,err=pcall(runSeedGrab, Cfg.SeedGrabConfig or {}); if not ok then warn("[ALL] seed-grab crashed: "..tostring(err)) end end) end
-    if Cfg.Mail     then task.spawn(function() local ok,err=pcall(runMail,     Cfg.MailConfig     or {}); if not ok then warn("[ALL] mail crashed: "..tostring(err)) end end) end
-    if Cfg.Webhook  then task.spawn(function() local ok,err=pcall(runWebhook,  Cfg.WebhookConfig  or {}); if not ok then warn("[ALL] webhook crashed: "..tostring(err)) end end) end
-    task.spawn(function() local ok,err=pcall(runGuard); if not ok then warn("[ALL] guard crashed: "..tostring(err)) end end)  
+        local t0 = os.clock()
+        while alive() and not ready() and os.clock()-t0 < 120 do task.wait(0.5) end
+        if not alive() then return end
+        print("[ALL] spawn + garden loaded -> starting subsystems"..(ready() and "" or " (timeout - starting anyway)"))
+
+        if Cfg.Plant then task.spawn(function() local ok,err=pcall(runPlantBuy, Cfg.PlantConfig or {}); if not ok then warn("[ALL] plant crashed: "..tostring(err)) end end) end
+        if Cfg.Harvest  then task.spawn(function()
+            while alive() and Cfg.Harvest ~= false do
+                local ok,err = pcall(runHarvest, Cfg.HarvestConfig or {})
+                if not ok then warn("[ALL] harvest crashed: "..tostring(err).." - restarting in 3s") end
+                if not (alive() and Cfg.Harvest ~= false) then break end
+                task.wait(3)
+            end
+        end) end
+        if Cfg.Sell     then task.spawn(function() local ok,err=pcall(runSell,     Cfg.SellConfig     or {}); if not ok then warn("[ALL] sell crashed: "..tostring(err)) end end) end
+        if Cfg.CollectEventSeeds then task.spawn(function() local ok,err=pcall(runSeedGrab, Cfg.CollectEventSeedsConfig or {}); if not ok then warn("[ALL] collect-event-seeds crashed: "..tostring(err)) end end) end
+        if Cfg.Mail     then task.spawn(function() local ok,err=pcall(runMail,     Cfg.MailConfig     or {}); if not ok then warn("[ALL] mail crashed: "..tostring(err)) end end) end
+        if Cfg.Webhook  then task.spawn(function() local ok,err=pcall(runWebhook,  Cfg.WebhookConfig  or {}); if not ok then warn("[ALL] webhook crashed: "..tostring(err)) end end) end
+        if Cfg.BuyGears  then task.spawn(function() local ok,err=pcall(runBuyGears,  Cfg.BuyGearsConfig  or {}); if not ok then warn("[ALL] buy-gears crashed: "..tostring(err)) end end) end
+        if Cfg.BuyPets   then task.spawn(function() local ok,err=pcall(runBuyPets,   Cfg.BuyPetsConfig   or {}); if not ok then warn("[ALL] buy-pets crashed: "..tostring(err)) end end) end
+        if Cfg.ExpandPlot then task.spawn(function() local ok,err=pcall(runExpandPlot, Cfg.ExpandPlotConfig or {}); if not ok then warn("[ALL] expand crashed: "..tostring(err)) end end) end
+        if Cfg.BuySlot   then task.spawn(function() local ok,err=pcall(runBuySlot,   Cfg.BuySlotConfig   or {}); if not ok then warn("[ALL] buy-slot crashed: "..tostring(err)) end end) end
+        if Cfg.EquipPets then task.spawn(function() local ok,err=pcall(runEquipPets, Cfg.EquipPetsConfig or {}); if not ok then warn("[ALL] equip crashed: "..tostring(err)) end end) end
+        if Cfg.Misc then task.spawn(function() local ok,err=pcall(runMisc, Cfg.MiscConfig or {}); if not ok then warn("[ALL] misc crashed: "..tostring(err)) end end) end
+    end)
