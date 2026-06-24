@@ -1,10 +1,9 @@
 getgenv().Config = {
-
   --=============================== FARMING ===============================--
-  Farming = {
-    Plant = {
-      Enabled = true,
-      Targets = {
+  ["Farming"] = {
+    ["Plant"] = {
+      ["Auto Plant"] = true,
+      ["Targets"] = {
         ["Carrot"] = 20,
         ["Strawberry"] = 20,
         ["Blueberry"] = 20,
@@ -27,155 +26,176 @@ getgenv().Config = {
         ["Pomegranate"] = 10,
         ["Poison Apple"] = 10,
       },
-      ShovelOverTarget = true,   -- auto-dig-up plants OVER their target (e.g. 30/10 -> 10/10). DESTRUCTIVE/permanent; needs a Shovel tool in backpack.
+      ["ShovelOverTarget"] = true,   -- auto-dig-up plants OVER their target (e.g. 30/10 -> 10/10). DESTRUCTIVE/permanent; needs a Shovel tool in backpack.
       -- PLANT LAYOUT: "spread" = berjauhan + random pos (default). "compact" = berdekatan (~0.6
       -- stud, mendekati min spacing server ~0.5) -> muat ~4x lebih banyak plant per plot.
-      PlantMode = "spread",      -- "spread" | "compact"
+      ["PlantMode"] = "spread",      -- "spread" | "compact"
+      -- AUTO-WATER-REVIVE: plant yang ditinggal offline lama bisa "decaying" (muncul icon watering can
+      -- di atasnya) dan akhirnya mati. Ini scan plant decaying lalu siram pakai watering can buat reset
+      -- decay. Mutated plant (Gold/Rainbow/dll) gak pernah decay -> di-skip otomatis. Butuh Watering
+      -- Can di backpack/equip. Idle murah: kalau 0 plant decaying, cuma scan ringan lalu tidur.
+      ["WaterRevive"] = true,                -- auto-siram plant decaying biar gak mati (interval scan hardcoded 60s)
+      ["WaterCan"] = "Common Watering Can",  -- nama can yang dipakai ("" = pakai can apa aja yang ada)
     },
 
-    Harvest = {
-      Enabled = true,
-      MutationOnly = {},
-      Mutations = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
+    ["Harvest"] = {
+      ["Auto Harvest"] = true,
+      ["MutationOnly"] = {},
+      ["Mutations"] = {},     -- empty = ANY mutation counts; or {"Gold","Rainbow"}
     },
 
-    Sell = {
-      Enabled = true,    -- independent auto-sell thread (separate from Harvest)
+    ["Sell"] = {
+      ["Auto Sell"] = true,    -- independent auto-sell thread (separate from Harvest)
       -- "full" = sell the instant fruit backpack hits threshold; "always" = sell whenever carrying fruit.
       -- PLUS (always on): auto sell-all every 1 minute, so fruit never sits longer than ~1 min.
-      Mode = "full",
-      SellAtFruitCount = 90,   -- (full mode) sell EARLY once FruitCount >= this   e.g. 90/100
-      SellAtPercent = 0,    -- (full mode) 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
+      ["Mode"] = "full",
+      ["SellAtFruitCount"] = 90,   -- (full mode) sell EARLY once FruitCount >= this   e.g. 90/100
+      ["SellAtPercent"] = 0,    -- (full mode) 0 = use SellAtFruitCount; else fraction of MaxFruitCapacity (0.9 = 90%)
     },
   },
 
   --================================ SHOP =================================--
-  Shop = {
-    BuySeed = {
-      Enabled = true,    -- auto-buy seeds (feeds Plant). OFF = plant from existing stock only.
+  ["Shop"] = {
+    ["BuySeed"] = {
+      ["Auto Buy Seed"] = true,    -- auto-buy seeds (feeds Plant). OFF = plant from existing stock only.
       -- how many of each to BUY (until planted+inventory reaches this). EMPTY = mirror Plant.Targets.
-      Targets = {
+      ["Targets"] = {
         ["Moon Bloom"] = 999,
         ["Dragon's Breath"] = 999,
       },
-      KeepBuyingAfterTarget = {},   -- these IGNORE the cap above: keep buying every restock (stockpile)
+      ["KeepBuyingAfterTarget"] = {},   -- these IGNORE the cap above: keep buying every restock (stockpile)
     },
 
-    BuyGears = {
-      Enabled = false,   -- auto-buy gears from the Gear Shop (buys ALL stock of each listed)
-      ListGear = { "Trowel" },  -- exact gear names
-      Rarities = {},          -- also buy ALL stock of any in-stock gear of these rarities
+    ["BuyGears"] = {
+      ["Auto Buy Gears"] = false,   -- auto-buy gears from the Gear Shop (buys ALL stock of each listed)
+      ["ListGear"] = { "Trowel" },  -- exact gear names
+      ["Rarities"] = {},          -- also buy ALL stock of any in-stock gear of these rarities
     },
 
-    BuyPets = {
-      Enabled = true,    -- auto-tame wild pets; costs the pet's Price in Sheckles
-      ListPets = {"Deer"},          -- {} = ALL species  e.g. { "Owl", "BlackDragon" }
-      Rarities = {"Legendary", "Mythic"},          -- {} = ALL rarities e.g. { "Legendary" }
-      Mode = "teleport",      -- "teleport" (instant) or "tween" (smooth glide)
-      TweenSpeed = 120,       -- studs/sec when Mode = "tween"
+    ["BuyPets"] = {
+      ["Auto Buy Pets"] = true,    -- auto-tame wild pets; costs the pet's Price in Sheckles
+      ["ListPets"] = {"Deer"},          -- {} = ALL species  e.g. { "Owl", "BlackDragon" }
+      ["Rarities"] = {"Legendary", "Mythic"},          -- {} = ALL rarities e.g. { "Legendary" }
+      ["Mode"] = "teleport",      -- "teleport" (instant) or "tween" (smooth glide)
+      ["TweenSpeed"] = 120,       -- studs/sec when Mode = "tween"
     },
 
-    BuySlot = {
-      Enabled = false,    -- auto-buy pet slots (raise MaxEquippedPets; 200k / 1M / 5M for slots 4/5/6)
-      TargetSlots = 6,        -- raise MaxEquippedPets to this (base 3, hard max 6)
+    ["BuySlot"] = {
+      ["Auto Buy Slot"] = false,    -- auto-buy pet slots (raise MaxEquippedPets; 200k / 1M / 5M for slots 4/5/6)
+      ["TargetSlots"] = 6,        -- raise MaxEquippedPets to this (base 3, hard max 6)
     },
 
-    ExpandPlot = {
-      Enabled = true, -- auto-expand garden while affordable (1M / 40M / 200M for #3/4/5)
-      TargetExpansions = 2,   -- expand until OwnedExpansions reaches this (hard max 5)
+    ["ExpandPlot"] = {
+      ["Auto Expand Plot"] = true, -- auto-expand garden while affordable (1M / 40M / 200M for #3/4/5)
+      ["TargetExpansions"] = 2,   -- expand until OwnedExpansions reaches this (hard max 5)
     },
   },
 
   --=============================== GENERAL ===============================--
-  -- (auto-skip-tutorial is HARDCODED always-on in runTutorialSkip; no toggle. Fires Net.Tutorial.Complete
-  --  on new/in-tutorial accounts so gifting/mail isn't server-blocked. No-op for returning players.)
-  General = {
-    CollectEventSeeds = {
-      Enabled = true,
-      CollectRainbow = true, CollectGold = true, CollectAllSeedPacks = false,
-      Mode = "teleport",   -- "teleport" (instant) or "tween" (smooth glide)
-      TweenSpeed = 120,    -- studs/sec when Mode = "tween"
-      ClaimSeconds = 10,    -- how long to keep firing the claim per seed (server claim can be a multi-second dwell)
-      Standoff = 1,        -- stud distance to stand FROM the seed. 0 = stand on it.
-      PauseFarmDuringEvent = true,  -- during a gold/rainbow seed event, PAUSE harvest + plant-buy + sell; auto-resume after
+  ["General"] = {
+    ["CollectEventSeeds"] = {
+      ["Auto Collect Event Seeds"] = true,
+      ["CollectRainbow"] = true, ["CollectGold"] = true, ["CollectAllSeedPacks"] = false,
+      ["Mode"] = "teleport",   -- "teleport" (instant) or "tween" (smooth glide)
+      ["TweenSpeed"] = 120,    -- studs/sec when Mode = "tween"
+      ["ClaimSeconds"] = 10,    -- how long to keep firing the claim per seed (server claim can be a multi-second dwell)
+      ["Standoff"] = 1,        -- stud distance to stand FROM the seed. 0 = stand on it.
+      ["PauseFarmDuringEvent"] = true,  -- during a gold/rainbow seed event, PAUSE harvest + plant-buy + sell; auto-resume after
     },
 
-    Equip = {
-      Enabled = true,  -- keep a configured pet loadout equipped (unequips anything not listed)
-      ListEquip = {"Deer"},  -- species to keep equipped (repeat a name = 2 of it)
-      EquipRarities = {},    -- also equip ANY owned pet of these rarities (Common/Uncommon/Rare/Super/Legendary/Mythic)
+    ["Equip"] = {
+      ["Auto Equip"] = true,  -- keep a configured pet loadout equipped (unequips anything not listed)
+      ["ListEquip"] = {"Deer"},  -- species to keep equipped (repeat a name = 2 of it)
+      ["EquipRarities"] = {},    -- also equip ANY owned pet of these rarities (Common/Uncommon/Rare/Super/Legendary/Mythic)
     },
 
-    Mail = {
-      Enabled = true,   -- set a REAL TargetUsername to use
-      TargetUsername = "JrdnTio", -- recipient
-      TargetUserId = nil,
-      MessageMail = "woi",  -- (can be empty)
-      ListItem = "Gold, Rainbow, Moon Bloom, Dragon's Breath",  -- "Tulip" / "Tulip, Carrot" / "all"
-      SendWhenCount = 15,
-      SendAmount = 0,           -- 0 = send all you have past threshold
-      Blacklist = {},
-      MaxPerItem = 0,
+    ["Mail"] = {
+      ["Auto Mail"] = true,
+      ["Send"] = {
+        -- { username = "Alt1", Message = "",     item = "Moon Bloom" },                -- semua Moon Bloom -> Alt1
+        -- { username = "Alt2", Message = "halo", item = "Deer" },                      -- semua Deer (unequipped) -> Alt2
+        -- { username = "Alt1", Message = "",     item = "Super Sprinkler", count = 1 },-- 1 Super Sprinkler aja
+      },
+      -- AUTO-CLAIM incoming mail/gifts (claims every inbox gift except guild invites). Independent of
+      -- sending; runs while Auto Mail is on. Good for the RECEIVER account in an alt-funnel setup.
+      ["Claim"] = true,
+      ["ClaimInterval"] = 5,   -- seconds between claim passes
+      ["ClaimDelay"] = 0.4,    -- delay between claiming each gift
     },
 
-    Webhook = {
-      Enabled = false,    -- Discord webhook notifier (Mail + Stats each have their OWN link)
-      Mail = true,
-      MailUrl = "https://discord.com/api/webhooks/1488029629993324594/qpJ2or-S6B3ZhBm1TRqzCk7Cc3dTkexViO5u9flvAanyzSd6G8M9JnS8byPUQAHOyKNO",  -- MAIL pings (empty = off)
-      MailMessageID = "",  -- set a Discord message id => EDIT that one message in place; empty => new each time
-      Stats = true,   -- post a live STATS snapshot (same content as the Stats GUI)
-      StatsUrl = "https://discord.com/api/webhooks/1488029629993324594/qpJ2or-S6B3ZhBm1TRqzCk7Cc3dTkexViO5u9flvAanyzSd6G8M9JnS8byPUQAHOyKNO",     -- STATS snapshots (empty = off)
-      StatsMessageID = "",     -- set a message id => edit in place; empty => new message each time
-      StatsInterval = 300,    -- seconds between stats posts
+    ["Webhook"] = {
+      ["Webhook"] = false,    -- Discord webhook notifier (Mail + Stats each have their OWN link)
+      ["Mail"] = true,
+      ["MailUrl"] = "",  -- MAIL pings (empty = off)
+      ["MailMessageID"] = "",  -- set a Discord message id => EDIT that one message in place; empty => new each time
+      ["Stats"] = true,   -- post a live STATS snapshot (same content as the Stats GUI)
+      ["StatsUrl"] = "",     -- STATS snapshots (empty = off)
+      ["StatsMessageID"] = "",     -- set a message id => edit in place; empty => new message each time
+      ["StatsInterval"] = 300,    -- seconds between stats posts
+      ["Seed"] = true,            -- ping Discord saat berhasil claim Gold/Rainbow seed (coalesced ~12s biar gak spam pas event)
+      ["SeedUrl"] = "",           -- link khusus seed-claim (kosong = pakai StatsUrl)
     },
   },
 
+  --================================ MISC ================================--
+  ["Misc"] = {
+    ["AntiAfk"] = true,           -- aggressive anti-AFK/anti-kick/anti-server-hop (no auto-jump; kills RequestHop + idle-kick + blocks shutdown/move-server)
+    ["Auto Reconnect"] = true,    -- rejoin automatically if you get disconnected / kicked
+    ["AutoRedeemCodes"] = true,   -- redeem ListCodes once on start (Net.Settings.SubmitCode)
+    ["ListCodes"] = {"TEAMGREENBEAN"},
+  },
+
   --============================= PERFORMANCE =============================--
-  Performance = {
-    Misc = {
-      Enabled = true,    -- misc client-side helpers (fps boost / anti-afk / auto-reconnect / redeem codes)
-      FpsBoost = true,
-      HideOwnPlants = true,   -- hide YOUR plot's plants client-side (harvest/sell tetap jalan). Restored saat stop.
-      LowPolyTextures = true, -- (FpsBoost) ratain Material + buang texture/decal/PBR -> low-poly (FPS naik, jelek). false = normal.
-      SetFPS = 0,             -- FPS cap via setfpscap. 0 = disabled; e.g. 60 caps at 60
-      StatsGUI = true,          -- on-screen live stats panel
-      AntiAfk = true,   -- anti-idle: auto-jump so Roblox won't kick you for being AFK
-      AutoReconnect = true,     -- rejoin automatically if you get disconnected / kicked
-      RedeemCodes = true,      -- redeem the codes below once on start (Net.Settings.SubmitCode)
-      ListCodes = {"TEAMGREENBEAN"},
-      Debug = true,   -- ONE debug switch for ALL subsystems (true = verbose, false = quiet)
-    },
+  ["Performance"] = {
+    ["FpsBoost"] = true,
+    ["HideOtherPlayers"] = true, -- hide OTHER players' characters client-side (independent of FpsBoost). false = keep them visible.
+    ["HideOtherPlants"] = true,  -- hide OTHER players' gardens/plants client-side (independent of FpsBoost). false = keep them visible.
+    ["HideOwnPlants"] = true,   -- hide YOUR plot's plants client-side (harvest/sell tetap jalan). Restored saat stop.
+    ["LowPolyTextures"] = true, -- (FpsBoost) ratain Material + buang texture/decal/PBR -> low-poly (FPS naik, jelek). false = normal.
+    ["SetFPS"] = 0,             -- FPS cap via setfpscap. 0 = disabled; e.g. 60 caps at 60
+    ["Debug"] = true,   -- ONE debug switch for ALL subsystems (true = verbose, false = quiet)
   },
 }
 
 -- ===== CONFIG ADAPTER (do not edit) =====================================================
--- Flattens the grouped config above into the legacy Cfg.<Feat> / Cfg.<Feat>Config keys the rest of
--- the script reads. The grouped layout is purely cosmetic; NO other code was changed. Each feature
--- table = { Enabled = <bool>, ...settings } -> Cfg.<Feat> = Enabled, Cfg.<Feat>Config = the table.
 do
   local C = getgenv().Config
+  local utilGroup = C.Misc   -- save the top-level "Misc" utility group BEFORE the Performance handler below sets C.Misc = true (legacy master flag), which would otherwise clobber it
+  -- { group, featureKey, legacyFlag, legacyConfigKey, enableKey } -- enableKey = the per-feature toggle label
   local MAP = {
-    { "Farming",     "Plant",             "Plant",             "PlantConfig" },
-    { "Farming",     "Harvest",           "Harvest",           "HarvestConfig" },
-    { "Farming",     "Sell",              "Sell",              "SellConfig" },
-    { "Shop",        "BuySeed",           "BuySeed",           "BuySeedConfig" },
-    { "Shop",        "BuyGears",          "BuyGears",          "BuyGearsConfig" },
-    { "Shop",        "BuyPets",           "BuyPets",           "BuyPetsConfig" },
-    { "Shop",        "BuySlot",           "BuySlot",           "BuySlotConfig" },
-    { "Shop",        "ExpandPlot",        "ExpandPlot",        "ExpandPlotConfig" },
-    { "General",     "CollectEventSeeds", "CollectEventSeeds", "CollectEventSeedsConfig" },
-    { "General",     "Equip",             "EquipPets",         "EquipPetsConfig" },
-    { "General",     "Mail",              "Mail",              "MailConfig" },
-    { "General",     "Webhook",           "Webhook",           "WebhookConfig" },
-    { "Performance", "Misc",              "Misc",              "MiscConfig" },
+    { "Farming",     "Plant",             "Plant",             "PlantConfig",             "Auto Plant" },
+    { "Farming",     "Harvest",           "Harvest",           "HarvestConfig",           "Auto Harvest" },
+    { "Farming",     "Sell",              "Sell",              "SellConfig",              "Auto Sell" },
+    { "Shop",        "BuySeed",           "BuySeed",           "BuySeedConfig",           "Auto Buy Seed" },
+    { "Shop",        "BuyGears",          "BuyGears",          "BuyGearsConfig",          "Auto Buy Gears" },
+    { "Shop",        "BuyPets",           "BuyPets",           "BuyPetsConfig",           "Auto Buy Pets" },
+    { "Shop",        "BuySlot",           "BuySlot",           "BuySlotConfig",           "Auto Buy Slot" },
+    { "Shop",        "ExpandPlot",        "ExpandPlot",        "ExpandPlotConfig",        "Auto Expand Plot" },
+    { "General",     "CollectEventSeeds", "CollectEventSeeds", "CollectEventSeedsConfig", "Auto Collect Event Seeds" },
+    { "General",     "Equip",             "EquipPets",         "EquipPetsConfig",         "Auto Equip" },
+    { "General",     "Mail",              "Mail",              "MailConfig",              "Auto Mail" },
+    { "General",     "Webhook",           "Webhook",           "WebhookConfig",           "Webhook" },
   }
   for _,m in ipairs(MAP) do
     local grp  = C[m[1]]
     local feat = (type(grp) == "table") and grp[m[2]] or nil
     if type(feat) == "table" then
-      C[m[3]] = feat.Enabled
+      C[m[3]] = feat[m[5]]
       C[m[4]] = feat
     end
+  end
+  -- Performance is now a FLAT group (no enable toggle) = always-on; each feature is gated by its own
+  -- sub-flag (FpsBoost / HideOtherPlayers / etc). Expose it as the legacy Cfg.MiscConfig and force the
+  -- legacy master gate Cfg.Misc = true so the subsystems still spawn.
+  if type(C.Performance) == "table" then C.MiscConfig = C.Performance; C.Misc = true end
+  -- Utility toggles (AntiAfk / Auto Reconnect / AutoRedeemCodes / ListCodes) live in their own top-level
+  -- "Misc" group; the code consumes them via MiscConfig. Map the Misc keys -> the legacy MiscConfig keys.
+  if type(utilGroup) == "table" and type(C.MiscConfig) == "table" then
+    local g = utilGroup
+    if g["AntiAfk"]         ~= nil then C.MiscConfig.AntiAfk       = g["AntiAfk"]         end
+    if g["Auto Reconnect"]  ~= nil then C.MiscConfig.AutoReconnect = g["Auto Reconnect"]  end
+    if g["AutoRedeemCodes"] ~= nil then C.MiscConfig.RedeemCodes   = g["AutoRedeemCodes"] end
+    if g["ListCodes"]       ~= nil then C.MiscConfig.ListCodes     = g["ListCodes"]       end
   end
 end
 
@@ -207,6 +227,10 @@ local grabUntil = 0
 -- (that's the regression the night-freeze introduced - it worked before, when never anchored).
 -- The seed loop holds position via fast re-teleport + zeroed velocity, so there's no fall.
 local noAnchorUntil = 0
+-- Set > os.clock() by runBuyPets for the whole wild-pet trip (teleport + tame + return-home) so the
+-- return-home failsafe does NOT yank the char home mid-tame. Auto-expires (timestamp, like grabUntil),
+-- so an error mid-trip can never leave the failsafe permanently disabled.
+local buyPetsUntil = 0
 -- Set TRUE by runSeedGrab whenever a wanted rainbow/gold/pack seed is present (event active).
 -- The night/moon freeze guard reads this and FULLY STANDS DOWN while it's true (no anchor, no
 -- garden-center re-pin) so a claim is never fought. noAnchorUntil only covered 0.5s windows that
@@ -817,6 +841,53 @@ local function runSeedGrab(C)
   local active = activeFor("CollectEventSeeds")
   local function enabled() return Cfg.CollectEventSeeds ~= false end   -- outer loop stays alive across respawns (idles while dead)
   local function dbg(...) if miscDebug() then print("[SEEDGRAB]", ...) end end
+  -- WEBHOOK: ping Discord when OUR Gold/Rainbow seed count rises (= WE actually claimed one; this
+  -- avoids the "us OR another player" ambiguity of the seed despawning). Watches the inventory replica
+  -- across any seed-category, coalesces an event burst into ONE message every ~12s (rate-limit safe).
+  task.spawn(function()
+    if (Cfg.WebhookConfig or {}).Seed == false then return end
+    local rep = PSC:GetLocalReplica() or PSC:WaitForLocalReplica(PSC, 30)
+    if not rep then return end
+    local function gr()   -- current totals of gold / rainbow seeds across seed categories
+      local g, r = 0, 0
+      local inv = rep.Data and rep.Data.Inventory
+      if type(inv) == "table" then
+        for cat, tbl in pairs(inv) do
+          if type(tbl) == "table" and tostring(cat):lower():find("seed") then
+            for name, ct in pairs(tbl) do
+              local ln = tostring(name):lower(); local n = tonumber(ct) or 0
+              if ln:find("rainbow") then r = r + n elseif ln:find("gold") then g = g + n end
+            end
+          end
+        end
+      end
+      return g, r
+    end
+    local pg, pr = gr()                 -- baseline (don't notify for seeds already owned at start)
+    local addG, addR, armed = 0, 0, false
+    while alive() and enabled() do
+      task.wait(2)
+      local g, r = gr()
+      if g > pg then addG = addG + (g - pg) end
+      if r > pr then addR = addR + (r - pr) end
+      pg, pr = g, r
+      if (addG > 0 or addR > 0) and not armed then
+        armed = true
+        task.spawn(function()
+          task.wait(12)                 -- coalesce a burst of claims into one Discord message
+          local sg, sr = addG, addR; addG, addR, armed = 0, 0, false
+          local wc = Cfg.WebhookConfig or {}
+          local url = (type(wc.SeedUrl) == "string" and wc.SeedUrl ~= "") and wc.SeedUrl or wc.StatsUrl
+          local parts = {}
+          if sg > 0 then parts[#parts+1] = ("%d Gold Seed"):format(sg) end
+          if sr > 0 then parts[#parts+1] = ("%d Rainbow Seed"):format(sr) end
+          if #parts == 0 then return end
+          local who = (lp.DisplayName ~= lp.Name) and lp.DisplayName or lp.Name
+          webhookPost(url, { content = ("**%s** claimed %s"):format(who, table.concat(parts, " + ")) }, nil, "Seed")
+        end)
+      end
+    end
+  end)
   local YOFF = 3.0   -- hardcoded teleport height offset
   local MOVE_MODE = tostring(C.Mode or "teleport"):lower()   -- "teleport" or "tween" (no-collision)
   local CLAIM_SECS = tonumber(C.ClaimSeconds) or 5           -- keep firing the claim this long per seed (server claim can be a multi-second dwell)
@@ -889,9 +960,10 @@ local function runSeedGrab(C)
   -- Combined with a ground-snapped target this stands the character on the floor (injak tanah),
   -- instead of the old flat +3 on top of the already-floating visual.
   local function footY()
-    -- floorY+3 = normal standing, SAME as the garden-center pivot (gardenCenterPos uses floorY+3,
-    -- verified live: char ~145, no hover). Avatar HipHeight reads 0 so the old hip+half=1 sank it.
-    return 3
+    -- Seed-teleport height offset above the ground-snapped floor. Set to +1 per request (was +3) so the
+    -- char stands LOWER / closer to the seed's ground spawn point. NOTE: +3 was the prior "normal
+    -- standing" value (HipHeight reads 0, so a low offset can look sunk into the floor) -- +1 intentional.
+    return 1
   end
   -- fire every interactable under a container: ProximityPrompt (instant via fireproximityprompt,
   -- hold zeroed so "hold E for several seconds" collapses to one trigger), ClickDetector, per-part
@@ -944,7 +1016,7 @@ local function runSeedGrab(C)
     return out
   end
   -- commit to ONE seed until its ref is destroyed (claimed by anyone) or ClaimSeconds elapses
-  local function claimOne(c)
+  local function claimOne(c, allCands)
     print(("[SEEDGRAB] *** %s *** claiming at %s"):format(c.name, tostring(c.rp)))
     -- SPEED: ground target computed ONCE (spawn point is static). On PROMPT-based servers the seed has
     -- a "CLAIM" ProximityPrompt (key E, hold=0) -> re-fire it every ~0.1s (= AUTO-HOLD E) until the ref
@@ -954,8 +1026,17 @@ local function runSeedGrab(C)
     -- heavy click/touch + physical-seed scan stays one-shot (keeps the seed-speed gains).
     local seedPos = groundSnap(c.rp)                                 -- floor under the data-ref (feet on the floor via footY)
     local claimPrompt; for _,d in ipairs(c.ref:GetDescendants()) do if d:IsA("ProximityPrompt") then claimPrompt=d; break end end
-    local t0=os.clock(); local fired=false; local lastPromptFire=0
+    -- WHOLE-MAP: cache the CLAIM prompt of EVERY other wanted seed too. fireproximityprompt is
+    -- distance-free, so we fire them in parallel (throttled) while teleport-claiming the nearest ->
+    -- the WHOLE map gets claimed, not just the closest. (Proximity-only seeds have no prompt -> empty.)
+    local allPrompts = {}
+    if allCands then for _,cc in ipairs(allCands) do if cc.ref ~= c.ref then for _,d in ipairs(cc.ref:GetDescendants()) do if d:IsA("ProximityPrompt") then allPrompts[#allPrompts+1]=d; break end end end end end
+    local t0=os.clock(); local fired=false; local lastPromptFire=0; local lastAllFire=0
     while active() and c.ref.Parent and (os.clock()-t0)<CLAIM_SECS do
+      -- BAIL if the seed is no longer a valid wanted seed: when the event ENDS mid-claim the ref can
+      -- linger a beat (or its Gold/Rainbow attribute gets cleared) without Parent going nil -> without
+      -- this, the loop keeps teleporting to the dead seed's spot and FIGHTS the return-home failsafe.
+      do local sn, sk = spawnInfo(c.ref); if not (sn and wanted(sk)) then break end end
       grabUntil = os.clock()+0.5; noAnchorUntil = os.clock()+0.5   -- no night re-pin + stay UNANCHORED
       local r=getRoot()
       local target = seedPos                                       -- stand BESIDE the seed (horizontal standoff), feet on the floor
@@ -965,6 +1046,13 @@ local function runSeedGrab(C)
         lastPromptFire=os.clock()                               -- AUTO-HOLD E: keep pressing the CLAIM prompt until the seed is ours
         pcall(function() claimPrompt.Enabled=true; claimPrompt.HoldDuration=0; claimPrompt.RequiresLineOfSight=false; claimPrompt.MaxActivationDistance=math.max(claimPrompt.MaxActivationDistance or 0, 60) end)
         pcall(function() fireproximityprompt(claimPrompt) end)
+      end
+      if #allPrompts>0 and (os.clock()-lastAllFire)>=0.15 and typeof(fireproximityprompt)=="function" then
+        lastAllFire=os.clock()                                   -- WHOLE-MAP: fire every OTHER seed's claim prompt in parallel (distance-free)
+        for _,p in ipairs(allPrompts) do if p.Parent then
+          pcall(function() p.Enabled=true; p.HoldDuration=0; p.RequiresLineOfSight=false; p.MaxActivationDistance=math.max(p.MaxActivationDistance or 0, 60) end)
+          pcall(function() fireproximityprompt(p) end)
+        end end
       end
       if not fired then                                           -- one-shot: click/touch + physical-seed scan (the expensive GetDescendants part)
         fired=true
@@ -994,13 +1082,16 @@ local function runSeedGrab(C)
         seedEventActive=false                                 -- no wanted seed -> freeze guard back to normal
         woke=false
         local tw=os.clock()
-        while enabled() and not woke and (os.clock()-tw)<0.25 do task.wait(0.03) end  -- break instantly on a new spawn
+        while enabled() and not woke and (os.clock()-tw)<0.25 do
+          if #candidates()>0 then break end   -- seed's type-attribute just replicated -> catch it instantly, don't wait out the poll
+          task.wait(0.03)
+        end
       else
         seedEventActive=true                                  -- event live -> runMisc freeze guard stands down (no anchor/re-pin)
         seedEventLingerUntil=os.clock()+10                    -- keep farming paused through the ~4-6s gaps between seed spawns
         local r=getRoot(); local hp=r and r.Position
         if hp then table.sort(cands, function(a,b) return (a.pos-hp).Magnitude < (b.pos-hp).Magnitude end) end
-        claimOne(cands[1])
+        claimOne(cands[1], cands)   -- nearest = teleport-claim; ALL others fired in parallel (whole map)
         task.wait(0.05)
       end
     end
@@ -1012,93 +1103,132 @@ end
 
 local function runMail(C)
   local function mail_active() return alive() and Cfg.Mail ~= false end
-  local RECIPIENT_USERNAME=C.TargetUsername; local RECIPIENT_USERID=C.TargetUserId
-  local MESSAGE=C.MessageMail; local LIST_ITEM=C.ListItem
-  local MAX_PER_ITEM=(C.MaxPerItem and C.MaxPerItem>0) and C.MaxPerItem or math.huge
-  local SEND_DEBOUNCE=5; local MAX_ITEMS_PER_GIFT=20
-  local SEND_WHEN_COUNT=C.SendWhenCount; local SEND_AMOUNT=C.SendAmount; local WATCH_INTERVAL=10
-  local INCLUDE_FRUITS=false
+  -- AUTO-CLAIM incoming mail/gifts (ported from the claim-mail script). Separate thread, independent of
+  -- the SEND watch AND the tutorial gate (claiming isn't tutorial-blocked, only sending is). Claims
+  -- every inbox gift except guild invites. Gated by MailConfig.Claim.
+  if C.Claim then
+    local claimDelay    = tonumber(C.ClaimDelay) or 0.4
+    local claimInterval = math.max(1, tonumber(C.ClaimInterval) or 5)
+    task.spawn(function()
+      print("[MAIL] auto-claim armed (every "..claimInterval.."s)")
+      while mail_active() do
+        local ok, inbox = pcall(function() return Net.Mailbox.OpenInbox:Fire() end)
+        if ok and type(inbox) == "table" then
+          local n = 0
+          for giftId, payload in pairs(inbox) do
+            if not mail_active() then break end
+            if type(payload) == "table" and payload.Kind ~= "GuildInvite" then
+              if pcall(function() Net.Mailbox.Claim:Fire(giftId) end) then n = n + 1 end
+              task.wait(claimDelay)
+            end
+          end
+          if n > 0 then print(("[MAIL] claimed %d gift(s)"):format(n)) end
+        end
+        for _=1, claimInterval do if not mail_active() then break end task.wait(1) end
+      end
+    end)
+  end
+  -- ===== SEND (system terbaru: per-entry recipient + message + item + count; tiap entry punya username sendiri) =====
+  local SEND_DEBOUNCE=5; local MAX_ITEMS_PER_GIFT=20; local WATCH_INTERVAL=10
   local ReplicaClient=require(RS.ClientModules.ReplicaClient)
   print(string.rep("=",56)); print("GAG2 Auto Send Mail  [LIVE]"); print(string.rep("=",56))
   local PER_INSTANCE={ Pets=true, HarvestedFruits=true }
   local GIFTABLE={"Seeds","SeedPacks","Crates","Sprinklers","WateringCans","Mushrooms","Gnomes","Raccoons","Trowels","Props","Pets","HarvestedFruits"}
   local function normName(s) s=tostring(s):lower():gsub("^%s+",""):gsub("%s+$",""); s=s:gsub("%s*seed$",""); return s end
-  local CAT_ALIAS={seed="Seeds",seeds="Seeds",fruit="HarvestedFruits",fruits="HarvestedFruits",harvestedfruit="HarvestedFruits",harvestedfruits="HarvestedFruits",pet="Pets",pets="Pets",crate="Crates",crates="Crates",pack="SeedPacks",packs="SeedPacks",seedpack="SeedPacks",seedpacks="SeedPacks",sprinkler="Sprinklers",sprinklers="Sprinklers",can="WateringCans",cans="WateringCans",wateringcan="WateringCans",wateringcans="WateringCans",mushroom="Mushrooms",mushrooms="Mushrooms",gnome="Gnomes",gnomes="Gnomes",raccoon="Raccoons",raccoons="Raccoons",trowel="Trowels",trowels="Trowels",prop="Props",props="Props"}
-  local function parseNameList(str)
-    local anyN,catN,n={},{},0
-    for token in tostring(str):gmatch("[^,]+") do
-      token=token:gsub("^%s+",""):gsub("%s+$","")
-      local catRaw,nameRaw=token:match("^([%a]+)%s*:%s*(.+)$")
-      if catRaw and nameRaw then local cat=CAT_ALIAS[catRaw:lower()]; local nm=normName(nameRaw); if cat and nm~="" then catN[cat]=catN[cat] or {}; catN[cat][nm]=true; n=n+1 end
-      else local nm=normName(token); if nm~="" then anyN[nm]=true; n=n+1 end end
+  -- Each Send entry: { item=, count=(nil=all), username=(REQUIRED, recipient), Message=(nil/empty=blank) }.
+  -- count = SESSION-TOTAL cap. Pets are sent UNEQUIPPED only. Entries can target different recipients.
+  local SPECS={}
+  for _,e in ipairs(C.Send or {}) do
+    if type(e)=="table" then
+      local raw=e.item or e.Item
+      if raw and tostring(raw)~="" then
+        local un=(type(e.username)=="string" and e.username~="") and e.username or nil
+        local msg=(type(e.Message)=="string" and e.Message) or (type(e.message)=="string" and e.message) or nil
+        SPECS[#SPECS+1]={ norm=normName(raw), raw=tostring(raw), count=tonumber(e.count or e.Count), username=un, message=msg, sent=0, uid=nil, uidErr=nil }
+      end
     end
-    return anyN,catN,n
   end
-  local NAME_SET,CAT_NAME_SET,NAME_COUNT=parseNameList(LIST_ITEM)
-  local SEND_ALL=(LIST_ITEM:lower():gsub("%s","")=="*" or LIST_ITEM:lower():gsub("%s","")=="all")
-  local BLACKLIST={}; for _,nm in ipairs(C.Blacklist or {}) do BLACKLIST[normName(nm)]=true end
-  local function resolveRecipient()
-    if type(RECIPIENT_USERID)=="number" and RECIPIENT_USERID>0 then return RECIPIENT_USERID end
-    local _rl = (type(RECIPIENT_USERNAME)=="string" and RECIPIENT_USERNAME:lower():gsub("%s","")) or ""
-    if _rl=="" or _rl=="username" or _rl=="puttargetusernamehere" or _rl=="targetusername" then
-      return nil, "set a real TargetUsername (placeholder '"..tostring(RECIPIENT_USERNAME).."' rejected)" end
-    for _,pl in ipairs(Players:GetPlayers()) do if pl.Name:lower()==RECIPIENT_USERNAME:lower() or pl.DisplayName:lower()==RECIPIENT_USERNAME:lower() then return pl.UserId end end
-    local ok,info=pcall(function() return Packet("MailboxLookupPlayer"):Fire(RECIPIENT_USERNAME) end)
-    if ok and type(info)=="table" and (info.UserId or info.userId) then return info.UserId or info.userId end
-    if ok and type(info)=="number" and info>0 then return info end
-    local ok2,uid=pcall(function() return Players:GetUserIdFromNameAsync(RECIPIENT_USERNAME) end)
-    if ok2 and type(uid)=="number" then return uid end
-    return nil, "could not resolve '"..RECIPIENT_USERNAME.."'"
-  end
-  local _psRep   -- cache the PlayerState replica (avoid re-scanning all replicas each pass)
+  local _psRep
   local function getInventory()
     if _psRep and _psRep.Data and _psRep.Data.Inventory then return _psRep.Data.Inventory end
     local ok,reg=pcall(ReplicaClient.Test); if not ok then return nil end
     for _,rep in pairs(reg.Replicas or {}) do if rep.Token=="PlayerState" and rep.Data and rep.Data.Inventory then _psRep=rep; return rep.Data.Inventory end end
   end
-  local function nameAllowed(category, displayName)
-    local nn=normName(displayName)
-    if BLACKLIST[nn] then return false end
-    local cset=CAT_NAME_SET[category]; if cset and cset[nn] then return true end
-    if category=="HarvestedFruits" and not INCLUDE_FRUITS then return false end
-    if SEND_ALL then return true end
-    return NAME_SET[nn]==true
+  local _userCache={}
+  local function resolveUserByName(name)
+    if _userCache[name]~=nil then return _userCache[name] or nil end
+    for _,pl in ipairs(Players:GetPlayers()) do if pl.Name:lower()==name:lower() or pl.DisplayName:lower()==name:lower() then _userCache[name]=pl.UserId; return pl.UserId end end
+    local ok,info=pcall(function() return Packet("MailboxLookupPlayer"):Fire(name) end)
+    if ok and type(info)=="table" and (info.UserId or info.userId) then local u=info.UserId or info.userId; _userCache[name]=u; return u end
+    if ok and type(info)=="number" and info>0 then _userCache[name]=info; return info end
+    local ok2,uid=pcall(function() return Players:GetUserIdFromNameAsync(name) end)
+    if ok2 and type(uid)=="number" then _userCache[name]=uid; return uid end
+    _userCache[name]=false; return nil
   end
-  local function buildItems(inv)
+  local function placeholderName(s) local l=tostring(s):lower():gsub("%s",""); return l=="" or l=="username" or l=="puttargetusernamehere" or l=="targetusername" end
+  -- resolve a spec's recipient from its OWN username (required; no global default). cached on spec.
+  local function specRecipient(spec)
+    if spec.uid then return spec.uid end
+    if spec.uidErr then return nil end
+    if not spec.username then spec.uidErr="entry has no username (set 'username' on the Send entry)"; return nil end
+    if placeholderName(spec.username) then spec.uidErr="username '"..tostring(spec.username).."' is empty/placeholder"; return nil end
+    local u=resolveUserByName(spec.username)
+    if u then spec.uid=u; return u end
+    spec.uidErr="could not resolve username '"..spec.username.."'"; return nil
+  end
+  -- collect giftable batch entries for ONE spec's item (capped to its remaining session count). Pets = unequipped only.
+  local function collectForSpec(inv, spec)
+    local left = spec.count and (spec.count - spec.sent) or math.huge
+    if left <= 0 then return {} end
     local items={}
     for _,cat in ipairs(GIFTABLE) do
+      if left <= 0 then break end
       local t=inv[cat]
       if type(t)=="table" then
         if PER_INSTANCE[cat] then
-          local byName={}
-          for key,val in pairs(t) do local nm=(type(val)=="table" and (val.Name or val.FruitName)) or tostring(key); if nameAllowed(cat,nm) then byName[nm]=byName[nm] or {}; table.insert(byName[nm],key) end end
-          for nm,uids in pairs(byName) do local have=#uids; if have>=SEND_WHEN_COUNT then local toSend=(SEND_AMOUNT>0) and math.min(have,SEND_AMOUNT) or have; toSend=math.min(toSend,MAX_PER_ITEM); for i=1,toSend do table.insert(items,{Category=cat,ItemKey=uids[i],Count=1,_display=nm,_have=have}) end end end
+          local equippedIds, eqOk = {}, false
+          if cat=="Pets" then
+            local ok,eq=pcall(function() return Net.Pets.GetEquippedPets:Fire() end)
+            if ok and type(eq)=="table" then eqOk=true; for _,e in ipairs(eq) do local id=(type(e)=="table" and e.Id) or e; if id then equippedIds[tostring(id)]=true end end end
+          end
+          for key,val in pairs(t) do
+            if left <= 0 then break end
+            local nm=(type(val)=="table" and (val.Name or val.FruitName)) or tostring(key)
+            if normName(nm)==spec.norm then
+              local skip=false
+              if cat=="Pets" then if eqOk then skip=(equippedIds[tostring(key)]==true) else skip=(type(val)=="table" and val.Equipped==true) end end
+              if not skip then table.insert(items,{Category=cat,ItemKey=key,Count=1,_display=nm}); left=left-1 end
+            end
+          end
         else
-          for key,val in pairs(t) do local have=tonumber(val) or 0; if nameAllowed(cat,key) and have>=SEND_WHEN_COUNT then local sc=(SEND_AMOUNT>0) and math.min(have,SEND_AMOUNT) or have; sc=math.min(sc,MAX_PER_ITEM); if sc>0 then table.insert(items,{Category=cat,ItemKey=key,Count=sc,_display=key,_have=have}) end end end
+          for key,val in pairs(t) do
+            if left <= 0 then break end
+            if normName(key)==spec.norm then
+              local have=tonumber(val) or 0
+              local send=math.min(have, left)
+              if send>0 then table.insert(items,{Category=cat,ItemKey=key,Count=send,_display=key}); left=left-send end
+            end
+          end
         end
       end
     end
     return items
   end
   local function chunk(list,size) local out,cur={},{} for _,v in ipairs(list) do table.insert(cur,v); if #cur>=size then table.insert(out,cur); cur={} end end if #cur>0 then table.insert(out,cur) end return out end
-  if SEND_ALL then print("[MAIL] filter: SEND ALL giftable items")
-  elseif NAME_COUNT>0 then print(("[MAIL] filter: by name (%d), fruits=%s"):format(NAME_COUNT, INCLUDE_FRUITS and "included" or "excluded"))
-  else warn("[MAIL] ListItem empty - nothing to do") return end
+  if #SPECS==0 then warn("[MAIL] Send list empty - nothing to do") return end
+  print(("[MAIL] %d send rule(s) loaded"):format(#SPECS))
   -- gifting is server-blocked during the new-player tutorial; wait until runTutorialSkip clears it
   if not tutorialDone then print("[MAIL] waiting for tutorial to finish before gifting...")
     while mail_active() and not tutorialDone do task.wait(0.5) end
     if not mail_active() then return end
     print("[MAIL] tutorial done - proceeding")
   end
-  local userId,err1=resolveRecipient()
-  if not userId then warn("[MAIL] recipient error: "..tostring(err1)) return end
-  print(("[MAIL] recipient = %s (UserId %s); threshold=%d"):format(tostring(RECIPIENT_USERNAME), tostring(userId), SEND_WHEN_COUNT))
 
-  local cumMails, cumSeeds = 0, 0   
-  local function postWebhook(sentByName, total)
-    if (Cfg.WebhookConfig or {}).Mail == false then return end   
+  local cumMails, cumItems = 0, 0
+  local function postWebhook(sentByName, total, recipLabel)
+    if (Cfg.WebhookConfig or {}).Mail == false then return end
     cumMails = cumMails + 1
-    cumSeeds = cumSeeds + (tonumber(total) or 0)
+    cumItems = cumItems + (tonumber(total) or 0)
     local lines = {}
     for nm, ct in pairs(sentByName) do lines[#lines+1] = ("%s x%d"):format(tostring(nm), ct) end
     local itemsText = (#lines > 0) and table.concat(lines, "\n") or "(none)"
@@ -1106,14 +1236,13 @@ local function runMail(C)
     local wc = Cfg.WebhookConfig or {}
     local ok = webhookPost(wc.MailUrl, {
       embeds = {{
-        title = "Auto-Mail",
-        color = 5763719,
+        title = "Auto-Mail", color = 5763719,
         fields = {
           { name = "Sender",    value = tostring(lp.Name), inline = true },
-          { name = "Recipient", value = ("%s (UserId %s)"):format(tostring(RECIPIENT_USERNAME), tostring(userId)), inline = true },
+          { name = "Recipient", value = tostring(recipLabel), inline = true },
           { name = "Last send", value = itemsText, inline = false },
           { name = "Total Mails Sent",   value = tostring(cumMails), inline = true },
-          { name = "Total Seeds Mailed", value = tostring(cumSeeds), inline = true },
+          { name = "Total Items Mailed", value = tostring(cumItems), inline = true },
         },
         footer = { text = "GAG2 Auto-Mail " .. os.date("%Y-%m-%d %H:%M:%S") },
       }},
@@ -1123,24 +1252,38 @@ local function runMail(C)
 
   local function doSendPass()
     local inv=getInventory(); if not inv then return 0 end
-    local items=buildItems(inv); if #items==0 then return 0 end
-    local batches=chunk(items,MAX_ITEMS_PER_GIFT); local sent=0; local sentByName={}
-    for bi,batch in ipairs(batches) do
-      local clean={}; for _,it in ipairs(batch) do table.insert(clean,{Category=it.Category,ItemKey=it.ItemKey,Count=it.Count}) end
-      local ok=pcall(function() return Packet("MailboxSendBatch"):Fire(userId,clean,MESSAGE) end)
-      if ok then
-        for _,it in ipairs(batch) do sent=sent+it.Count; sentByName[it._display]=(sentByName[it._display] or 0)+it.Count end
-        print(("[MAIL] batch %d/%d sent (%d entries)"):format(bi,#batches,#clean))
+    local totalSent=0
+    for _,spec in ipairs(SPECS) do
+      if not mail_active() then break end
+      if not (spec.count and spec.sent >= spec.count) then
+        local items=collectForSpec(inv, spec)
+        if #items>0 then
+          local uid=specRecipient(spec)
+          if uid then
+            local msg=(spec.message~=nil) and spec.message or ""
+            local label=("%s (uid %s)"):format(tostring(spec.username), tostring(uid))
+            local sentByName={}; local passSent=0
+            for _,batch in ipairs(chunk(items, MAX_ITEMS_PER_GIFT)) do
+              if not mail_active() then break end
+              local clean={}; for _,it in ipairs(batch) do table.insert(clean,{Category=it.Category,ItemKey=it.ItemKey,Count=it.Count}) end
+              local ok=pcall(function() return Packet("MailboxSendBatch"):Fire(uid,clean,msg) end)
+              if ok then
+                for _,it in ipairs(batch) do spec.sent=spec.sent+it.Count; totalSent=totalSent+it.Count; passSent=passSent+it.Count; sentByName[it._display]=(sentByName[it._display] or 0)+it.Count end
+                print(("[MAIL] sent %s (%d entries) -> %s"):format(spec.raw, #clean, label))
+              end
+              task.wait(SEND_DEBOUNCE)
+            end
+            if passSent>0 then postWebhook(sentByName, passSent, label) end
+          elseif spec.uidErr then warn("[MAIL] skip '"..spec.raw.."': "..tostring(spec.uidErr)) end
+        end
       end
-      if bi<#batches then task.wait(SEND_DEBOUNCE) end
     end
-    if sent>0 then postWebhook(sentByName, sent) end
-    return sent
+    return totalSent
   end
-  print("[MAIL] watch started - auto-send when count >= "..SEND_WHEN_COUNT)
+  print("[MAIL] watch started")
   while mail_active() do
-    local ok,sent=pcall(doSendPass)
-    if ok and sent and sent>0 then task.wait(SEND_DEBOUNCE) end
+    local ok,err=pcall(doSendPass)
+    if not ok and miscDebug() then warn("[MAIL] send pass error: "..tostring(err)) end
     task.wait(WATCH_INTERVAL)
   end
   print("[MAIL] watch stopped.")
@@ -1409,6 +1552,7 @@ local function runBuyPets(C)
     -- in 2). Taming is also probabilistic per accepted fire (higher rarity = more fires), so
     -- fire ~1/sec, re-teleporting to the WANDERING physical pet each time, until owned / it
     -- despawns / a generous timeout.
+    buyPetsUntil = os.clock() + 25   -- stand the return-home failsafe down for the WHOLE buypet trip
     local t0 = os.clock()
     while active() and part.Parent and (part:GetAttribute("OwnerUserId") or 0) == 0 and os.clock()-t0 <= 20 do
       grabUntil = os.clock() + 1.8; noAnchorUntil = os.clock() + 1.8   -- no re-pin + UNANCHORED (like seeds; guard zeroes velocity each frame so no fall)
@@ -1427,6 +1571,7 @@ local function runBuyPets(C)
       task.wait(1.0)
     end
     pivotGardenCenter("after buypet")   -- return to garden center after a tame
+    buyPetsUntil = 0                     -- trip done -> re-enable the return-home failsafe
     local mine = (not part.Parent) or (part:GetAttribute("OwnerUserId") == lp.UserId)
     if mine then
       handled[part] = true
@@ -1438,7 +1583,7 @@ local function runBuyPets(C)
     return mine
   end
   local dirty = false
-  refFolder.ChildAdded:Connect(function() if active() then dirty = true end end)
+  local addConn = refFolder.ChildAdded:Connect(function() if active() then dirty = true end end)
   print("[BUYPET] started (event-driven + rarity priority)")
   while active() do
     local best, bestRank
@@ -1460,6 +1605,7 @@ local function runBuyPets(C)
       dirty = false
     end
   end
+  if addConn then addConn:Disconnect() end
   print("[BUYPET] stopped.")
 end
 
@@ -1645,250 +1791,6 @@ local function runRedeemCodes(C)
   print("[CODE] done.")
 end
 
--- On-screen live stats panel (gaya seperti hub lain). Reads everything live (no counters
--- needed): username, Sheckles + sheckles/min, weather/event, inventory (seeds/pets/gears like
--- the webhook), equipped pet list, and seeds planted vs the Plant subsystem targets.
-local function runStatsGui(C)
-  local function active() return alive() and (C.StatsGUI ~= false) end
-  if C.StatsGUI == false then return end
-  local startClock = os.clock()   -- captured at execute -> drives the Uptime row
-  local ReplicaClient = require(RS.ClientModules.ReplicaClient)
-  local SEED_CATS = { "Seeds" }
-  local GEAR_CATS = { "Sprinklers","WateringCans","Trowels","Rakes","Ladders","Teleporters","Flashbangs" }
-  local PET_CATS  = { "Pets","Birds","Gnomes","Raccoons" }
-  local PER_INSTANCE = { Pets=true, Birds=true, Gnomes=true, Raccoons=true, HarvestedFruits=true, Eggs=true }
-
-  local function getData()
-    local ok,reg = pcall(ReplicaClient.Test); if not ok then return nil end
-    for _,rep in pairs(reg.Replicas or {}) do if rep.Token=="PlayerState" and rep.Data then return rep.Data end end
-  end
-  local function summarize(inv, cats)
-    local lines, total = {}, 0
-    for _,cat in ipairs(cats) do
-      local t = inv[cat]
-      if type(t)=="table" then
-        if PER_INSTANCE[cat] then
-          local byName = {}
-          for _,val in pairs(t) do
-            local nm = (type(val)=="table" and (val.Name or val.PetName or val.FruitName)) or cat
-            byName[nm] = (byName[nm] or 0) + 1; total = total + 1
-          end
-          for nm,ct in pairs(byName) do lines[#lines+1] = ("%s x%d"):format(tostring(nm), ct) end
-        else
-          for key,val in pairs(t) do local n=tonumber(val) or 0; if n>0 then lines[#lines+1]=("%s x%d"):format(tostring(key), n); total=total+n end end
-        end
-      end
-    end
-    table.sort(lines)
-    return lines, total
-  end
-  local function equippedList(data)
-    local pets = data and data.Inventory and data.Inventory.Pets
-    local byName, total = {}, 0
-    if type(pets)=="table" then
-      for _,p in pairs(pets) do if type(p)=="table" and p.Equipped then byName[p.Name or "?"]=(byName[p.Name or "?"] or 0)+1; total=total+1 end end
-    end
-    local lines={} for nm,ct in pairs(byName) do lines[#lines+1]=("%s x%d"):format(tostring(nm),ct) end
-    table.sort(lines)
-    return lines, total
-  end
-  local function plantedCounts() return countPlantedBySeed(getPlot()) end
-  local function fmt(n)
-    n = tonumber(n) or 0; local a = math.abs(n)
-    if a>=1e9 then return ("%.2fB"):format(n/1e9)
-    elseif a>=1e6 then return ("%.2fM"):format(n/1e6)
-    elseif a>=1e3 then return ("%.2fK"):format(n/1e3)
-    else return tostring(math.floor(n+0.5)) end
-  end
-  local function fmtTime(sec)
-    sec = math.max(0, math.floor(sec))
-    local h = math.floor(sec/3600); local m = math.floor((sec%3600)/60); local s = sec%60
-    if h>0 then return ("%02dh %02dm %02ds"):format(h,m,s) else return ("%02dm %02ds"):format(m,s) end
-  end
-  local function joinTrunc(lines, maxLines)
-    if #lines == 0 then return "(none)" end
-    if #lines > maxLines then local cut={} for i=1,maxLines do cut[i]=lines[i] end cut[#cut+1]=("... (+%d more)"):format(#lines-maxLines); lines=cut end
-    return table.concat(lines, "\n")
-  end
-
-  -- colors (pure black hub style, like the reference)
-  local BG     = Color3.fromRGB(0, 0, 0)
-  local ACCENT = Color3.fromRGB(255, 255, 255)
-  local GRAY   = Color3.fromRGB(150, 150, 150)
-  local LIGHT  = Color3.fromRGB(235, 235, 235)
-  local AHEX, GHEX = "#ffffff", "#9a9a9a"
-
-  local function guiParent()
-    local ok, hui = pcall(function() return gethui and gethui() end)
-    if ok and hui then return hui end
-    local ok2 = pcall(function() return game:GetService("CoreGui").Name end)
-    if ok2 then return game:GetService("CoreGui") end
-    return lp:WaitForChild("PlayerGui")
-  end
-  local parent = guiParent()
-  for _,c in ipairs(parent:GetChildren()) do if c.Name=="GAG2_Stats" then pcall(function() c:Destroy() end) end end
-  if G.__GAG2_STATS then pcall(function() G.__GAG2_STATS:Destroy() end) end
-
-  local sg = Instance.new("ScreenGui")
-  sg.Name = "GAG2_Stats"; sg.ResetOnSpawn = false; sg.IgnoreGuiInset = true
-  sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; sg.DisplayOrder = 9999
-  if syn and syn.protect_gui then pcall(syn.protect_gui, sg) end
-  sg.Parent = parent
-  G.__GAG2_STATS = sg
-
-  -- ===== compact corner HUD (option A): small top-right card, counts-first, collapsible details =====
-  local card = Instance.new("ScrollingFrame")
-  card.Name="Card"; card.AnchorPoint=Vector2.new(1,0); card.Position=UDim2.new(1,-14,0,14)
-  card.Active=true   -- catch input so the body is draggable
-  card.Size=UDim2.new(0,280,0,0); card.AutomaticSize=Enum.AutomaticSize.Y
-  card.AutomaticCanvasSize=Enum.AutomaticSize.Y; card.CanvasSize=UDim2.new(0,0,0,0); card.ScrollingDirection=Enum.ScrollingDirection.Y
-  card.ScrollBarThickness=4; card.ScrollBarImageColor3=GRAY; card.ScrollBarImageTransparency=0.3
-  card.BackgroundColor3=BG; card.BackgroundTransparency=0.1; card.BorderSizePixel=0; card.Parent=sg
-  do local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,12); c.Parent=card
-   local s=Instance.new("UIStroke"); s.Color=ACCENT; s.Thickness=1; s.Transparency=0.82; s.Parent=card
-   local pad=Instance.new("UIPadding"); pad.PaddingLeft=UDim.new(0,14); pad.PaddingRight=UDim.new(0,14); pad.PaddingTop=UDim.new(0,11); pad.PaddingBottom=UDim.new(0,11); pad.Parent=card
-   local lay=Instance.new("UIListLayout"); lay.Padding=UDim.new(0,5); lay.SortOrder=Enum.SortOrder.LayoutOrder; lay.Parent=card
-   -- cap card height to ~85% screen so expanding Details SCROLLS instead of overflowing off-screen
-   local vp=(workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y) or 700
-   local szc=Instance.new("UISizeConstraint"); szc.MaxSize=Vector2.new(280, math.max(160, math.floor(vp*0.85))); szc.Parent=card end
-
-  local ord=0
-  local function ordn() ord=ord+1; return ord end
-  local function mkText(parent, opts)
-    local l=Instance.new("TextLabel"); l.BackgroundTransparency=1; l.RichText=true
-    l.Font=Enum.Font.GothamBold; l.TextSize=opts.size or 13; l.TextColor3=opts.color or LIGHT
-    l.TextXAlignment=opts.align or Enum.TextXAlignment.Left; l.TextYAlignment=Enum.TextYAlignment.Top
-    l.Size=UDim2.new(1,0,0,opts.h or 16); l.AutomaticSize=opts.auto and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
-    l.TextWrapped=opts.wrap==true; l.Text=""; l.Parent=parent
-    return l
-  end
-  local function statRow(labelText)
-    local f=Instance.new("Frame"); f.Size=UDim2.new(1,0,0,16); f.BackgroundTransparency=1; f.LayoutOrder=ordn(); f.Parent=card
-    local l=mkText(f,{color=GRAY}); l.Size=UDim2.new(0.4,0,1,0); l.Text=labelText
-    local v=mkText(f,{align=Enum.TextXAlignment.Right}); v.Size=UDim2.new(0.6,0,1,0); v.Position=UDim2.new(0.4,0,0,0)
-    return v
-  end
-  local function sepLine() local f=Instance.new("Frame"); f.Size=UDim2.new(1,0,0,1); f.BackgroundColor3=GRAY; f.BackgroundTransparency=0.55; f.BorderSizePixel=0; f.LayoutOrder=ordn(); f.Parent=card end
-
-  local hdr=Instance.new("Frame"); hdr.Size=UDim2.new(1,0,0,18); hdr.BackgroundTransparency=1; hdr.LayoutOrder=ordn(); hdr.Parent=card
-  local lblName=mkText(hdr,{size=15,color=ACCENT}); lblName.Size=UDim2.new(0.62,0,1,0); lblName.Text="GAG2"
-  local lblUptime=mkText(hdr,{size=12,color=GRAY,align=Enum.TextXAlignment.Right}); lblUptime.Size=UDim2.new(0.38,0,1,0); lblUptime.Position=UDim2.new(0.62,0,0,0)
-  sepLine()
-  local vShek    = statRow("Sheckles")
-  local vWeather = statRow("Weather")
-  local vPlanted = statRow("Planted")
-  local vEquip   = statRow("Equipped")
-  sepLine()
-  local lblInv = mkText(card,{size=12,align=Enum.TextXAlignment.Center}); lblInv.LayoutOrder=ordn()
-
-  local detailsOpen = false
-  local dToggle=Instance.new("TextButton")
-  dToggle.Name="Details"; dToggle.Size=UDim2.new(1,0,0,16); dToggle.BackgroundTransparency=1; dToggle.AutoButtonColor=false
-  dToggle.Font=Enum.Font.GothamBold; dToggle.TextSize=12; dToggle.TextColor3=GRAY; dToggle.TextXAlignment=Enum.TextXAlignment.Left
-  dToggle.Text="+ Details"; dToggle.LayoutOrder=ordn(); dToggle.Parent=card
-  local dBox=Instance.new("Frame"); dBox.Size=UDim2.new(1,0,0,0); dBox.AutomaticSize=Enum.AutomaticSize.Y; dBox.BackgroundTransparency=1; dBox.Visible=false; dBox.LayoutOrder=ordn(); dBox.Parent=card
-  do local lay=Instance.new("UIListLayout"); lay.Padding=UDim.new(0,3); lay.SortOrder=Enum.SortOrder.LayoutOrder; lay.Parent=dBox end
-  local function detailLabel() local l=mkText(dBox,{size=12,auto=true,wrap=true}); l.LayoutOrder=ordn(); return l end
-  local dPlant,dEquip,dSeeds,dPets,dGears = detailLabel(),detailLabel(),detailLabel(),detailLabel(),detailLabel()
-  dToggle.MouseButton1Click:Connect(function() detailsOpen=not detailsOpen; dBox.Visible=detailsOpen; dToggle.Text=(detailsOpen and "- " or "+ ").."Details" end)
-
-  -- HIDE -> collapse card to a small "Stats" pill (parented to sg so it survives the hide)
-  local shown  = true
-  local hideBtn=Instance.new("TextButton")
-  hideBtn.Name="Hide"; hideBtn.Size=UDim2.new(1,0,0,22); hideBtn.BackgroundColor3=Color3.fromRGB(0,0,0); hideBtn.BackgroundTransparency=0.2
-  hideBtn.AutoButtonColor=true; hideBtn.Font=Enum.Font.GothamBold; hideBtn.TextSize=12; hideBtn.TextColor3=ACCENT
-  hideBtn.Text="Hide"; hideBtn.BorderSizePixel=0; hideBtn.LayoutOrder=ordn(); hideBtn.Parent=card
-  do local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,8); c.Parent=hideBtn
-   local s=Instance.new("UIStroke"); s.Color=ACCENT; s.Thickness=1; s.Transparency=0.4; s.Parent=hideBtn end
-  local showPill=Instance.new("TextButton")
-  showPill.Name="Show"; showPill.AnchorPoint=Vector2.new(1,0); showPill.Position=UDim2.new(1,-14,0,14); showPill.Size=UDim2.new(0,96,0,26)
-  showPill.BackgroundColor3=Color3.fromRGB(0,0,0); showPill.BackgroundTransparency=0.1; showPill.AutoButtonColor=true
-  showPill.Font=Enum.Font.GothamBold; showPill.TextSize=12; showPill.TextColor3=ACCENT; showPill.Text="Stats"; showPill.BorderSizePixel=0
-  showPill.Visible=false; showPill.ZIndex=50; showPill.Parent=sg
-  do local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,8); c.Parent=showPill
-   local s=Instance.new("UIStroke"); s.Color=ACCENT; s.Thickness=1; s.Transparency=0.15; s.Parent=showPill end
-  local function setShown(v) shown=v; card.Visible=v; showPill.Visible=not v end
-  hideBtn.MouseButton1Click:Connect(function() setShown(false) end)
-  showPill.MouseButton1Click:Connect(function() setShown(true) end)
-
-  -- draggable: grab the card body to reposition it (UIS connections tracked + disconnected on close)
-  local UISdrag = game:GetService("UserInputService")
-  local dragging, dragStart, startPos = false, nil, nil
-  local dragConns = {}
-  dragConns[#dragConns+1] = card.InputBegan:Connect(function(i)
-    if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
-      dragging=true; dragStart=i.Position; startPos=card.Position
-    end
-  end)
-  dragConns[#dragConns+1] = UISdrag.InputEnded:Connect(function(i)
-    if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=false end
-  end)
-  dragConns[#dragConns+1] = UISdrag.InputChanged:Connect(function(i)
-    if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then
-      local d=i.Position-dragStart
-      card.Position=UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
-    end
-  end)
-
-  -- self-heal: snap card visibility back to the chosen state if something external flips it
-  card:GetPropertyChangedSignal("Visible"):Connect(function() if card.Visible ~= shown then card.Visible = shown end end)
-  sg:GetPropertyChangedSignal("Enabled"):Connect(function() if sg.Enabled ~= true then sg.Enabled = true end end)
-
-  local firstShek, firstClock = nil, os.clock()
-  local function update()
-    local data = getData()
-    local name = (lp.DisplayName ~= lp.Name) and lp.DisplayName or lp.Name
-    lblName.Text = "GAG2 | "..name
-    lblUptime.Text = fmtTime(os.clock()-startClock)
-
-    local shek = data and tonumber(data.Sheckles) or 0
-    if data and firstShek == nil then firstShek = shek; firstClock = os.clock() end
-    local perMin = 0
-    if firstShek then local mins=(os.clock()-firstClock)/60; if mins>0.08 then perMin=(shek-firstShek)/mins end end
-    vShek.Text = ("<font color='%s'>%s</font>  <font color='%s'>%s%s/min</font>"):format(AHEX, fmt(shek), GHEX, perMin>=0 and "+" or "", fmt(perMin))
-
-    local w = workspace:GetAttribute("ActiveWeather")
-    vWeather.Text = (type(w)=="string" and w~="") and w or "Clear"
-
-    local targets = (Cfg.PlantConfig and Cfg.PlantConfig.Targets) or {}
-    local pc = plantedCounts()
-    local pnames = {} for n,t in pairs(targets) do if (tonumber(t) or 0) > 0 then pnames[#pnames+1]=n end end
-    table.sort(pnames)
-    local plines, ptot, ttot = {}, 0, 0
-    for _,n in ipairs(pnames) do local have=pc[n] or 0; local tg=tonumber(targets[n]) or 0; ptot=ptot+have; ttot=ttot+tg; plines[#plines+1]=("%s: %d/%d"):format(n, have, tg) end
-    vPlanted.Text = ("%d / %d"):format(ptot, ttot)
-
-    local eL, eT = equippedList(data)
-    vEquip.Text = (eT==1) and "1 pet" or (tostring(eT).." pets")
-
-    local inv = (data and data.Inventory) or {}
-    local sL,sT = summarize(inv, SEED_CATS)
-    local pL,pT = summarize(inv, PET_CATS)
-    local gL,gT = summarize(inv, GEAR_CATS)
-    lblInv.Text = ("<font color='%s'>Seeds </font><font color='%s'>%s</font>   <font color='%s'>Pets </font><font color='%s'>%d</font>   <font color='%s'>Gears </font><font color='%s'>%d</font>"):format(GHEX,AHEX,fmt(sT),GHEX,AHEX,pT,GHEX,AHEX,gT)
-
-    if detailsOpen then
-      dPlant.Text = ("<font color='%s'>Garden:</font>  %s"):format(GHEX, joinTrunc(plines,40))
-      dEquip.Text = ("<font color='%s'>Equipped:</font>  %s"):format(GHEX, joinTrunc(eL,30))
-      dSeeds.Text = ("<font color='%s'>Seeds:</font>  %s"):format(GHEX, joinTrunc(sL,60))
-      dPets.Text  = ("<font color='%s'>Pets:</font>  %s"):format(GHEX, joinTrunc(pL,60))
-      dGears.Text = ("<font color='%s'>Gears:</font>  %s"):format(GHEX, joinTrunc(gL,60))
-    end
-  end
-
-  print("[STATS] panel up (compact)")
-  while active() do
-    if sg.Enabled ~= true then sg.Enabled = true end
-    if card.Visible ~= shown then card.Visible = shown end
-    if shown then pcall(update) end
-    if not (sg and sg.Parent) then break end
-    task.wait(0.5)
-  end
-  for _,c in ipairs(dragConns) do pcall(function() c:Disconnect() end) end
-  pcall(function() sg:Destroy() end)
-  if G.__GAG2_STATS == sg then G.__GAG2_STATS = nil end
-  print("[STATS] panel closed.")
-end
 
 local function runGuard()
   local function active() return alive() end
@@ -1977,7 +1879,7 @@ local function runGuard()
     local DRIFT = 150
     task.wait(8)   -- let the after-spawn pivot settle first
     while active() do
-      if not (seedEventActive or os.clock()<grabUntil or os.clock()<noAnchorUntil) then
+      if not (seedEventActive or os.clock()<grabUntil or os.clock()<noAnchorUntil or os.clock()<buyPetsUntil) then
         local c = gardenCenterPos(); local r = getRoot()
         if c and r then
           local d = r.Position - c; d = Vector3.new(d.X, 0, d.Z)
@@ -2013,27 +1915,7 @@ local function runFpsBoost(C)
     pcall(function() Lighting.EnvironmentDiffuseScale = 0; Lighting.EnvironmentSpecularScale = 0 end)
     if ter then local cl = ter:FindFirstChildOfClass("Clouds"); if cl then pcall(function() cl:Destroy() end) end end
 
-    -- Misc may start before spawn -> wait for PlotId so we never mistake our OWN garden
-    -- for an "other" one (which would un-parent our own Plants and break harvest).
-    for _=1,60 do if lp:GetAttribute("PlotId") or not active() then break end task.wait(0.5) end
-    myPlotName = "Plot"..tostring(lp:GetAttribute("PlotId"))
-    local function removePlot(plot)
-      if plot.Name == myPlotName then return end
-      local pf = plot:FindFirstChild("Plants")
-      if pf and not removed[pf] then removed[pf] = plot; pcall(function() pf.Parent = nil end) end
-    end
-    local gardens = workspace:WaitForChild("Gardens", 30)
-    if gardens then
-      for _,plot in ipairs(gardens:GetChildren()) do if active() then removePlot(plot) end end
-      conns[#conns+1] = gardens.ChildAdded:Connect(function(plot)
-        if active() and plot.Name ~= myPlotName then
-          local pf = plot:WaitForChild("Plants", 30)
-          if pf and active() then removePlot(plot) end
-        end
-      end)
-      -- (removed gardens.DescendantAdded backup: it fired for EVERY fruit growing in every
-      -- garden = constant CPU. ChildAdded above already removes other gardens' Plants.)
-    end
+    -- (remove-OTHER-gardens moved OUT of FpsBoost into its own HideOtherPlants block below)
 
     local function killFx(d)
       if d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Smoke") or d:IsA("Fire") or d:IsA("Sparkles") then
@@ -2088,12 +1970,24 @@ local function runFpsBoost(C)
     -- drain it in a bounded, yield-batched loop (<=200 per yield) so it can NEVER spike. Snapshot-
     -- swap the set each pass so new arrivals don't mutate the table mid-iteration.
     local pending = {}
-    local function queueFlatten(d) if active() then pending[d] = true end end
+    local pendingN = 0
+    local PENDING_CAP = 4000
+    -- (A) During a seed event the char teleports across the whole map -> StreamingEnabled streams in
+    --     huge instance counts that ALL fire DescendantAdded. Those instances are far away and stream
+    --     back OUT when we return home, so flattening them is wasted work that backlogs for ages AFTER
+    --     the event = the post-event FPS drop. Skip queueing entirely while a seed event is live.
+    -- (B) Hard-cap the queue so the backlog can NEVER grow unbounded from any cause. The one-time
+    --     flattenSubtree + the periodic HideOwnPlants re-hide keep the home garden covered regardless.
+    local function queueFlatten(d)
+      if not active() or seedEventActive then return end
+      if pendingN >= PENDING_CAP then return end
+      if not pending[d] then pending[d] = true; pendingN = pendingN + 1 end
+    end
     conns[#conns+1] = workspace.DescendantAdded:Connect(queueFlatten)
     task.spawn(function()
       while active() do
         if next(pending) then
-          local batch = pending; pending = {}   -- swap: new arrivals go to the fresh table
+          local batch = pending; pending = {}; pendingN = 0   -- swap: new arrivals go to the fresh table
           local n = 0
           for d in pairs(batch) do
             if not active() then break end
@@ -2116,11 +2010,16 @@ local function runFpsBoost(C)
     for _,c in ipairs(workspace:GetChildren()) do killJunk(c) end
     conns[#conns+1] = workspace.ChildAdded:Connect(function(c) if active() then killJunk(c) end end)
 
-    -- (#4) hide OTHER players' characters: un-parent them (transparency wouldn't free FPS).
-    -- Restored on stop. If it ever causes client errors, just turn Misc/FpsBoost off.
+    -- (hide-OTHER-players moved OUT of FpsBoost into its own HideOtherPlayers block below)
+
+    print("[MISC] fps boost applied (quality lowest, shadows/effects off, particles+weather off)")
+  end
+
+  -- HIDE OTHER PLAYERS (independent of FpsBoost): un-parent other players' characters (transparency
+  -- wouldn't free FPS). Restored on stop. Keyed by PLAYER so a respawn overwrites the old (destroyed)
+  -- Character ref -> no leak. Set HideOtherPlayers=false to keep other players visible.
+  if C.HideOtherPlayers then
     local Plrs = game:GetService("Players")
-    -- keyed by PLAYER (not character): a respawn overwrites the player's entry so the old
-    -- (destroyed) Character ref is dropped -> no accumulation/leak.
     local function hideChar(p, ch) if ch and ch.Parent then hiddenChars[p] = {ch=ch, parent=ch.Parent}; pcall(function() ch.Parent = nil end) end end
     local function onPlr(p)
       if p == lp then return end
@@ -2130,9 +2029,42 @@ local function runFpsBoost(C)
     for _,p in ipairs(Plrs:GetPlayers()) do onPlr(p) end
     conns[#conns+1] = Plrs.PlayerAdded:Connect(function(p) if active() then onPlr(p) end end)
     conns[#conns+1] = Plrs.PlayerRemoving:Connect(function(p) hiddenChars[p] = nil end)   -- drop leavers (no stale key)
+    print("[MISC] hide-other-players armed (other players' characters hidden client-side)")
+  end
 
-    do local n=0 for _ in pairs(removed) do n=n+1 end
-     print(("[MISC] fps boost applied (quality lowest, shadows/effects off, %d other gardens removed, particles+weather off, sfx muted)"):format(n)) end
+  -- HIDE OTHER PLANTS (independent of FpsBoost): un-parent OTHER players' gardens' Plants folders
+  -- (the big render cost). Waits for PlotId first so it never un-parents YOUR own garden. Restored on
+  -- stop. Set HideOtherPlants=false to keep other gardens visible.
+  if C.HideOtherPlants then
+    for _=1,60 do if lp:GetAttribute("PlotId") or not active() then break end task.wait(0.5) end
+    myPlotName = "Plot"..tostring(lp:GetAttribute("PlotId"))
+    local function removePlot(plot)
+      if plot.Name == myPlotName then return end
+      local pf = plot:FindFirstChild("Plants")
+      if pf and not removed[pf] then removed[pf] = plot; pcall(function() pf.Parent = nil end) end
+    end
+    local gardens = workspace:WaitForChild("Gardens", 30)
+    if gardens then
+      for _,plot in ipairs(gardens:GetChildren()) do if active() then removePlot(plot) end end
+      conns[#conns+1] = gardens.ChildAdded:Connect(function(plot)
+        if active() and plot.Name ~= myPlotName then
+          local pf = plot:WaitForChild("Plants", 30)
+          if pf and active() then removePlot(plot) end
+        end
+      end)
+      -- (C) StreamingEnabled recreates plot/Plants instances on every stream cycle. We un-parent the
+      --     Plants folder (pf.Parent=nil) but keep its ref in `removed` for restore-on-stop, so when
+      --     the plot streams OUT the detached folder is NOT destroyed with it -> `removed` leaks dead
+      --     refs (event teleporting causes many cycles). Prune entries whose PLOT is gone (plot.Parent
+      --     ==nil = streamed out / destroyed); the ones we merely hid keep plot.Parent==Gardens.
+      task.spawn(function()
+        while active() do
+          for pf,plot in pairs(removed) do if not plot.Parent then removed[pf] = nil end end
+          task.wait(5)
+        end
+      end)
+    end
+    print("[MISC] hide-other-plants armed (other players' gardens hidden client-side)")
   end
 
   -- HIDE OWN PLANTS (independent of FpsBoost): make YOUR plot's plants invisible client-side so a
@@ -2183,18 +2115,65 @@ local function runMisc(C)
   -- now = harmless; the grab/seed/plant movement helpers zero their own velocity on each teleport.)
 
   if C.AntiAfk then
+    -- AGGRESSIVE anti-AFK / anti-kick / anti-server-hop (ported from the claim-mail script). NO auto-jump.
+    -- Neutralizes the game's anti-afk (RequestHop + AntiAfkFlags), kills the Idled kick, and blocks the
+    -- server-shutdown / idle-timer / move-server namecalls so the session stays put indefinitely.
     local okVIM, VIM = pcall(function() return game:GetService("VirtualInputManager") end)
-    local function jump()
-      if okVIM and VIM then
-        pcall(function() VIM:SendKeyEvent(true,Enum.KeyCode.Space,false,game); task.wait(0.06); VIM:SendKeyEvent(false,Enum.KeyCode.Space,false,game) end)
-      else
-        local c = lp.Character; local h = c and c:FindFirstChildOfClass("Humanoid")
-        if h then pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end
-      end
+    local function killHop()
+      local ok, N = pcall(require, RS.SharedModules.Networking)
+      if not ok or type(N) ~= "table" then return end
+      local rh = N.AntiAfk and N.AntiAfk.RequestHop
+      if type(rh) ~= "table" or rh.__hopKilled then return end
+      rh.Fire = function() end; rh.__hopKilled = true
     end
-    conns[#conns+1] = lp.Idled:Connect(function() if active() then jump() end end)
-    task.spawn(function() while active() do for _=1, math.max(5, 600) do if not active() then return end task.wait(1) end jump() end end)
-    print(("[MISC] anti-afk armed (jump every %ds; VIM=%s)"):format(600, tostring(okVIM and VIM~=nil)))
+    local function killFlag()
+      local ok, flags = pcall(require, RS.SharedModules.Flags.AntiAfkFlags)
+      if not ok or type(flags) ~= "table" or type(flags.Enabled) ~= "table" then return end
+      pcall(function() flags.Enabled.Get = function() return false end end)
+      pcall(function() flags.IdleSeconds.Get = function() return math.huge end end)
+    end
+    local function fakeInput()
+      if not (okVIM and VIM) then return end
+      pcall(function()
+        VIM:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game); task.wait(0.05)
+        VIM:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
+      end)
+    end
+    local function clearSignal(sig)
+      local node = sig.Next
+      while node and node ~= sig do node.Function = nil; node = node.Next end
+      sig.Next = sig; sig.Previous = sig
+    end
+    pcall(function() clearSignal(Net.AntiAfk.RequestHop.OnClientEvent) end)
+    pcall(function()
+      if type(getconnections) == "function" then
+        for _, conn in pairs(getconnections(lp.Idled)) do pcall(function() conn:Disable() end) end
+      end
+    end)
+    pcall(function()
+      local VirtualUser = game:GetService("VirtualUser")
+      conns[#conns+1] = lp.Idled:Connect(function()
+        pcall(function() VirtualUser:ClickButton2(Vector2.new(math.random(0,1000), math.random(0,1000))) end)
+      end)
+    end)
+    pcall(function()
+      -- Install the __namecall hook ONCE per session. Re-exec re-runs runMisc; without this guard
+      -- each re-exec stacks a new hook over the previous gen's (never undone) -> closure leak +
+      -- every namecall in the game pays N stacked hooks after N re-execs.
+      if not G.__gag2_nc_hooked and type(hookmetamethod) == "function" and type(newcclosure) == "function" and type(checkcaller) == "function" then
+        G.__gag2_nc_hooked = true
+        local blocked = { ["Server Closing"] = true, ["Idle Tracking: Update Timer"] = true, ["Move Server"] = true }
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+          if not checkcaller() and blocked[tostring(self)] then return nil end
+          return oldNamecall(self, ...)
+        end))
+      end
+    end)
+    killFlag()
+    task.spawn(function() while active() do pcall(killHop); pcall(killFlag); task.wait(10) end end)
+    task.spawn(function() while active() do fakeInput(); task.wait(60) end end)
+    print("[MISC] anti-afk armed (aggressive: anti idle-kick + server-hop + namecall block; no auto-jump)")
   end
 
   if C.AutoReconnect then
@@ -2233,13 +2212,13 @@ end
 
 task.spawn(function() local ok,err=pcall(runGuard); if not ok then warn("[ALL] guard crashed: "..tostring(err)) end end)
 
--- FpsBoost + HideOwnPlants + Redeem-Codes run IMMEDIATELY on execute (before spawn). FpsBoost drops
--- graphics right away while still loading; HideOwnPlants lives in the same runFpsBoost thread and
--- self-waits for PlotId, so it hides your garden as soon as it loads. Redeem fires its codes the
--- moment you're spawned. The rest of Misc (char guard / anti-afk / auto-reconnect) waits for spawn
--- in the gated block below. NOTE: runFpsBoost must spawn if EITHER FpsBoost or HideOwnPlants is on
--- (the two inner blocks are independently gated by their own flags).
-if Cfg.Misc and ((Cfg.MiscConfig or {}).FpsBoost ~= false or (Cfg.MiscConfig or {}).HideOwnPlants) then
+-- runFpsBoost runs IMMEDIATELY on execute (before spawn) and hosts 4 independent blocks, each gated by
+-- its own flag: FpsBoost (drops graphics right away while still loading) + HideOtherPlayers (arms now,
+-- hooks PlayerAdded/CharacterAdded) act instantly; HideOtherPlants + HideOwnPlants start now but
+-- self-wait for PlotId before acting (so they never hide YOUR own garden). Redeem-Codes also runs at
+-- execute. The rest of Misc (char guard / anti-afk / auto-reconnect) waits for spawn in the gated block
+-- below. NOTE: runFpsBoost must spawn if ANY of the 4 flags is on.
+if Cfg.Misc and ((Cfg.MiscConfig or {}).FpsBoost ~= false or (Cfg.MiscConfig or {}).HideOwnPlants or (Cfg.MiscConfig or {}).HideOtherPlayers or (Cfg.MiscConfig or {}).HideOtherPlants) then
   task.spawn(function() local ok,err=pcall(runFpsBoost, Cfg.MiscConfig or {}); if not ok then warn("[ALL] fps-boost/hide-own-plants crashed: "..tostring(err)) end end)
 end
 if Cfg.Misc then   -- SetFPS: cap FPS via setfpscap (0 = disabled / leave FPS untouched)
@@ -2251,9 +2230,6 @@ if Cfg.Misc then   -- SetFPS: cap FPS via setfpscap (0 = disabled / leave FPS un
 end
 if Cfg.Misc and (Cfg.MiscConfig or {}).RedeemCodes then
   task.spawn(function() local ok,err=pcall(runRedeemCodes, Cfg.MiscConfig or {}); if not ok then warn("[ALL] redeem crashed: "..tostring(err)) end end)
-end
-if Cfg.Misc and (Cfg.MiscConfig or {}).StatsGUI ~= false then
-  task.spawn(function() local ok,err=pcall(runStatsGui, Cfg.MiscConfig or {}); if not ok then warn("[ALL] stats-gui crashed: "..tostring(err)) end end)
 end
 
 -- TUTORIAL AUTO-SKIP: runs immediately (doesn't need the garden). New accounts are server-gated during
@@ -2295,6 +2271,96 @@ local function runTutorialSkip()   -- HARDCODED ALWAYS-ON (no config toggle)
 end
 task.spawn(function() local ok,err=pcall(runTutorialSkip); if not ok then warn("[ALL] tutorial-skip crashed: "..tostring(err)); tutorialDone = true end end)
 
+-- ===== AUTO-WATER-REVIVE ================================================================
+-- Plant yang ditinggal offline lama bisa "decaying" (muncul icon watering can di atasnya) dan akhirnya
+-- mati. Logika decay disalin PERSIS dari game (WaterRevivePromptController.IsPlantDecaying):
+-- PrimeStartedAt>0, TANPA mutation, seed punya PrimeTime (bukan AlwaysPrime), dan
+-- PlantLifecycleHandler:GetDecayAlpha > 0.5. Scan periodik -> equip watering can -> fire UseWateringCan
+-- di tiap plant decaying buat reset decay. Idle murah: 0 decaying = cuma scan lalu tidur (gak equip).
+local function runWaterRevive(C)
+  local function active() return alive() and C.WaterRevive ~= false end
+  local interval = 60   -- hardcoded scan interval (detik)
+  local wantCan  = C.WaterCan
+  local okPLH, PLH = pcall(require, lp.PlayerScripts.Controllers.PlantLifecycleHandler)
+  if not okPLH or type(PLH) ~= "table" then warn("[WATER] PlantLifecycleHandler unavailable - water-revive off"); return end
+  local SeedData = require(RS.SharedModules.SeedData)
+  local seedByName = {}
+  for _,s in pairs(SeedData) do if type(s) == "table" and s.SeedName then seedByName[s.SeedName] = s end end
+  local uidStr = tostring(lp.UserId)
+
+  -- find a watering can Tool in character/backpack (prefer the configured name; else any can)
+  local function findCan()
+    local fallback
+    for _,where in ipairs({ lp.Character, lp:FindFirstChild("Backpack") }) do
+      if where then for _,t in ipairs(where:GetChildren()) do
+        if t:IsA("Tool") then
+          local cn = t:GetAttribute("WateringCan")
+          if cn then
+            if (not wantCan) or wantCan == "" or cn == wantCan or t.Name == wantCan then return t, cn end
+            if not fallback then fallback = { t, cn } end
+          end
+        end
+      end end
+    end
+    if fallback then return fallback[1], fallback[2] end
+    return nil
+  end
+
+  local function equip(tool)
+    local char = lp.Character; local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if char and hum and tool.Parent ~= char then pcall(function() hum:EquipTool(tool) end) end
+  end
+
+  -- mirror of game IsPlantDecaying (decay alpha > 0.5; mutated/no-PrimeTime plants never decay)
+  local function isDecaying(entry, key)
+    if not (entry.PrimeStartedAt and entry.PrimeStartedAt > 0) then return false end
+    if entry.Mutation then return false end
+    local sd = seedByName[entry.SeedName]
+    if not (sd and sd.PrimeTime) then return false end
+    if sd.AlwaysPrime then return false end
+    local uid, pid = tostring(key):match("^(%d+)_(.+)$")
+    if not (uid and pid) then return false end
+    local ok, alpha = pcall(function() return PLH:GetDecayAlpha(tonumber(uid), pid) end)
+    return ok and type(alpha) == "number" and alpha > 0.5
+  end
+
+  local function scanDecaying()
+    local out = {}
+    pcall(function()
+      for key, entry in pairs(PLH:GetActiveEntries()) do
+        if type(entry) == "table" and tostring(key):match("^(%d+)_") == uidStr
+           and entry.Model and entry.Model.Parent and isDecaying(entry, key) then
+          local pp = entry.Model.PrimaryPart
+          if pp then out[#out+1] = pp.Position end
+        end
+      end
+    end)
+    return out
+  end
+
+  print(("[WATER] auto-water-revive armed (every %ds, can=%s)"):format(interval, tostring((wantCan and wantCan ~= "") and wantCan or "any")))
+  while active() do
+    local decaying = scanDecaying()
+    if #decaying > 0 then
+      local tool, canName = findCan()
+      if tool and canName then
+        equip(tool); task.wait(0.15)
+        for _,pos in ipairs(decaying) do
+          if not active() then break end
+          pcall(function() Net.WateringCan.UseWateringCan:Fire(pos - Vector3.new(0, 0.3, 0), canName, tool) end)
+          task.wait(0.1)
+        end
+        print(("[WATER] watered %d decaying plant(s) with '%s'"):format(#decaying, tostring(canName)))
+      else
+        warn(("[WATER] %d plant(s) decaying but NO watering can in backpack/character"):format(#decaying))
+      end
+    end
+    local waited = 0
+    while active() and waited < interval do task.wait(1); waited = waited + 1 end
+  end
+  print("[WATER] stopped.")
+end
+
 task.spawn(function()
   local function ready()
     if not alive() then return false end
@@ -2311,6 +2377,14 @@ task.spawn(function()
   print("[ALL] spawn + garden loaded -> starting subsystems"..(ready() and "" or " (timeout - starting anyway)"))
 
   if Cfg.Plant or Cfg.BuySeed then task.spawn(function() local ok,err=pcall(runPlantBuy, Cfg.PlantConfig or {}); if not ok then warn("[ALL] plant/buyseed crashed: "..tostring(err)) end end) end
+  if (Cfg.PlantConfig or {}).WaterRevive then task.spawn(function()
+    while alive() and (Cfg.PlantConfig or {}).WaterRevive do
+      local ok,err = pcall(runWaterRevive, Cfg.PlantConfig or {})
+      if not ok then warn("[ALL] water-revive crashed: "..tostring(err).." - restarting in 3s") end
+      if not (alive() and (Cfg.PlantConfig or {}).WaterRevive) then break end
+      task.wait(3)
+    end
+  end) end
   if Cfg.Harvest  then task.spawn(function()
     while alive() and Cfg.Harvest ~= false do
       local ok,err = pcall(runHarvest, Cfg.HarvestConfig or {})
