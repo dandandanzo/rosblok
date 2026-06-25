@@ -4,24 +4,24 @@ getgenv().Config = {
     ["Plant"] = {
       ["Auto Plant"] = true,
       ["Targets"] = {
-        ["Carrot"] = 20,
-        ["Strawberry"] = 20,
-        ["Blueberry"] = 20,
-        ["Tomato"] = 20,
-        ["Apple"] = 20,
-        ["Bamboo"] = 50,
-        ["Corn"] = 20,
-        ["Cactus"] = 20,
-        ["Pineapple"] = 20,
-        ["Mushroom"] = 50,
+        ["Carrot"] = 10,
+        ["Strawberry"] = 10,
+        ["Blueberry"] = 10,
+        ["Tomato"] = 10,
+        ["Apple"] = 10,
+        ["Bamboo"] = 200,
+        ["Corn"] = 10,
+        ["Cactus"] = 10,
+        ["Pineapple"] = 10,
+        ["Mushroom"] = 200,
         ["Green Bean"] = 3,
-        ["Banana"] = 20,
-        ["Grape"] = 20,
-        ["Coconut"] = 20,
-        ["Mango"] = 20,
-        ["Dragon Fruit"] = 15,
-        ["Acorn"] = 15,
-        ["Cherry"] = 15,
+        ["Banana"] = 10,
+        ["Grape"] = 10,
+        ["Coconut"] = 10,
+        ["Mango"] = 10,
+        ["Dragon Fruit"] = 20,
+        ["Acorn"] = 20,
+        ["Cherry"] = 20,
         ["Venom Spitter"] = 10,
         ["Pomegranate"] = 10,
         ["Poison Apple"] = 10,
@@ -67,22 +67,22 @@ getgenv().Config = {
     },
 
     ["BuyGears"] = {
-      ["Auto Buy Gears"] = false,   -- auto-buy gears from the Gear Shop (buys ALL stock of each listed)
-      ["ListGear"] = { "Trowel" },  -- exact gear names
+      ["Auto Buy Gears"] = true,   -- auto-buy gears from the Gear Shop (buys ALL stock of each listed)
+      ["ListGear"] = { "Common Watering Can" },  -- exact gear names
       ["Rarities"] = {},          -- also buy ALL stock of any in-stock gear of these rarities
     },
 
     ["BuyPets"] = {
       ["Auto Buy Pets"] = true,    -- auto-tame wild pets; costs the pet's Price in Sheckles
-      ["ListPets"] = {"Deer"},          -- {} = ALL species  e.g. { "Owl", "BlackDragon" }
-      ["Rarities"] = {"Legendary", "Mythic"},          -- {} = ALL rarities e.g. { "Legendary" }
+      ["ListPets"] = {"Deer", "Unicorn", "Golden Dragonfly", "Raccoon"},          -- {} = ALL species  e.g. { "Owl", "BlackDragon" }
+      ["Rarities"] = {},          -- {} = ALL rarities e.g. { "Legendary" }
       ["Mode"] = "teleport",      -- "teleport" (instant) or "tween" (smooth glide)
       ["TweenSpeed"] = 120,       -- studs/sec when Mode = "tween"
     },
 
     ["BuySlot"] = {
-      ["Auto Buy Slot"] = false,    -- auto-buy pet slots (raise MaxEquippedPets; 200k / 1M / 5M for slots 4/5/6)
-      ["TargetSlots"] = 6,        -- raise MaxEquippedPets to this (base 3, hard max 6)
+      ["Auto Buy Slot"] = true,    -- auto-buy pet slots (raise MaxEquippedPets; 200k / 1M / 5M for slots 4/5/6)
+      ["TargetSlots"] = 4,        -- raise MaxEquippedPets to this (base 3, hard max 6)
     },
 
     ["ExpandPlot"] = {
@@ -99,7 +99,7 @@ getgenv().Config = {
       ["Mode"] = "teleport",   -- "teleport" (instant) or "tween" (smooth glide)
       ["TweenSpeed"] = 120,    -- studs/sec when Mode = "tween"
       ["ClaimSeconds"] = 10,    -- how long to keep firing the claim per seed (server claim can be a multi-second dwell)
-      ["Standoff"] = 1,        -- stud distance to stand FROM the seed. 0 = stand on it.
+      ["Standoff"] = 0,        -- stud distance to stand FROM the seed. 0 = stand on it.
       ["PauseFarmDuringEvent"] = true,  -- during a gold/rainbow seed event, PAUSE harvest + plant-buy + sell; auto-resume after
     },
 
@@ -111,10 +111,14 @@ getgenv().Config = {
 
     ["Mail"] = {
       ["Auto Mail"] = true,
+      -- Tiap entry: username (recipient, WAJIB) + item. Opsional: count = THRESHOLD (tunggu sampai punya
+      -- >= count item itu, baru kirim SEMUANYA; dihilangin = kirim apa adanya), Message (kosong = blank).
+      -- Watch loop cek tiap ~10s, jadi ngalir terus tiap item-nya nambah lagi.
       ["Send"] = {
-        -- { username = "Alt1", Message = "",     item = "Moon Bloom" },                -- semua Moon Bloom -> Alt1
-        -- { username = "Alt2", Message = "halo", item = "Deer" },                      -- semua Deer (unequipped) -> Alt2
-        -- { username = "Alt1", Message = "",     item = "Super Sprinkler", count = 1 },-- 1 Super Sprinkler aja
+        { username = "user", Message = "halo",     item = "Moon Bloom" },
+        { username = "user", Message = "halo",     item = "Dragon's Breath" },        -- kirim semua Moon Bloom tiap ada -> Alt1
+        { username = "user", Message = "halo",     item = "Gold", count = 10 },
+        { username = "user", Message = "halo",     item = "Rainbow", count = 10 },  -- tunggu 10 Gold seed, baru kirim semua -> Alt1
       },
       -- AUTO-CLAIM incoming mail/gifts (claims every inbox gift except guild invites). Independent of
       -- sending; runs while Auto Mail is on. Good for the RECEIVER account in an alt-funnel setup.
@@ -124,11 +128,11 @@ getgenv().Config = {
     },
 
     ["Webhook"] = {
-      ["Webhook"] = false,    -- Discord webhook notifier (Mail + Stats each have their OWN link)
+      ["Webhook"] = true,    -- Discord webhook notifier (Mail + Stats each have their OWN link)
       ["Mail"] = true,
       ["MailUrl"] = "",  -- MAIL pings (empty = off)
       ["MailMessageID"] = "",  -- set a Discord message id => EDIT that one message in place; empty => new each time
-      ["Stats"] = true,   -- post a live STATS snapshot (same content as the Stats GUI)
+      ["Stats"] = false,   -- post a live STATS snapshot (same content as the Stats GUI)
       ["StatsUrl"] = "",     -- STATS snapshots (empty = off)
       ["StatsMessageID"] = "",     -- set a message id => edit in place; empty => new message each time
       ["StatsInterval"] = 300,    -- seconds between stats posts
@@ -1176,13 +1180,11 @@ local function runMail(C)
     if u then spec.uid=u; return u end
     spec.uidErr="could not resolve username '"..spec.username.."'"; return nil
   end
-  -- collect giftable batch entries for ONE spec's item (capped to its remaining session count). Pets = unequipped only.
+  -- count = THRESHOLD: only send once we have >= count of this item (total in inventory; pets = unequipped),
+  -- then send ALL of it. nil = no threshold (send whatever's present). Returns {} while still below threshold.
   local function collectForSpec(inv, spec)
-    local left = spec.count and (spec.count - spec.sent) or math.huge
-    if left <= 0 then return {} end
     local items={}
     for _,cat in ipairs(GIFTABLE) do
-      if left <= 0 then break end
       local t=inv[cat]
       if type(t)=="table" then
         if PER_INSTANCE[cat] then
@@ -1192,25 +1194,27 @@ local function runMail(C)
             if ok and type(eq)=="table" then eqOk=true; for _,e in ipairs(eq) do local id=(type(e)=="table" and e.Id) or e; if id then equippedIds[tostring(id)]=true end end end
           end
           for key,val in pairs(t) do
-            if left <= 0 then break end
             local nm=(type(val)=="table" and (val.Name or val.FruitName)) or tostring(key)
             if normName(nm)==spec.norm then
               local skip=false
               if cat=="Pets" then if eqOk then skip=(equippedIds[tostring(key)]==true) else skip=(type(val)=="table" and val.Equipped==true) end end
-              if not skip then table.insert(items,{Category=cat,ItemKey=key,Count=1,_display=nm}); left=left-1 end
+              if not skip then table.insert(items,{Category=cat,ItemKey=key,Count=1,_display=nm}) end
             end
           end
         else
           for key,val in pairs(t) do
-            if left <= 0 then break end
             if normName(key)==spec.norm then
               local have=tonumber(val) or 0
-              local send=math.min(have, left)
-              if send>0 then table.insert(items,{Category=cat,ItemKey=key,Count=send,_display=key}); left=left-send end
+              if have>0 then table.insert(items,{Category=cat,ItemKey=key,Count=have,_display=key}) end
             end
           end
         end
       end
+    end
+    if spec.count then
+      local total=0
+      for _,it in ipairs(items) do total=total+it.Count end
+      if total < spec.count then return {} end   -- below threshold -> wait for more before sending
     end
     return items
   end
@@ -1255,31 +1259,32 @@ local function runMail(C)
     local totalSent=0
     for _,spec in ipairs(SPECS) do
       if not mail_active() then break end
-      if not (spec.count and spec.sent >= spec.count) then
-        local items=collectForSpec(inv, spec)
-        if #items>0 then
-          local uid=specRecipient(spec)
-          if uid then
-            local msg=(spec.message~=nil) and spec.message or ""
-            local label=("%s (uid %s)"):format(tostring(spec.username), tostring(uid))
-            local sentByName={}; local passSent=0
-            for _,batch in ipairs(chunk(items, MAX_ITEMS_PER_GIFT)) do
-              if not mail_active() then break end
-              local clean={}; for _,it in ipairs(batch) do table.insert(clean,{Category=it.Category,ItemKey=it.ItemKey,Count=it.Count}) end
-              local ok=pcall(function() return Packet("MailboxSendBatch"):Fire(uid,clean,msg) end)
-              if ok then
-                for _,it in ipairs(batch) do spec.sent=spec.sent+it.Count; totalSent=totalSent+it.Count; passSent=passSent+it.Count; sentByName[it._display]=(sentByName[it._display] or 0)+it.Count end
-                print(("[MAIL] sent %s (%d entries) -> %s"):format(spec.raw, #clean, label))
-              end
-              task.wait(SEND_DEBOUNCE)
+      local items=collectForSpec(inv, spec)
+      if #items>0 then
+        local uid=specRecipient(spec)
+        if uid then
+          local msg=(spec.message~=nil) and spec.message or ""
+          local label=("%s (uid %s)"):format(tostring(spec.username), tostring(uid))
+          local sentByName={}; local passSent=0
+          for _,batch in ipairs(chunk(items, MAX_ITEMS_PER_GIFT)) do
+            if not mail_active() then break end
+            local clean={}; for _,it in ipairs(batch) do table.insert(clean,{Category=it.Category,ItemKey=it.ItemKey,Count=it.Count}) end
+            local ok=pcall(function() return Packet("MailboxSendBatch"):Fire(uid,clean,msg) end)
+            if ok then
+              for _,it in ipairs(batch) do totalSent=totalSent+it.Count; passSent=passSent+it.Count; sentByName[it._display]=(sentByName[it._display] or 0)+it.Count end
+              print(("[MAIL] sent %s (%d entries) -> %s"):format(spec.raw, #clean, label))
             end
-            if passSent>0 then postWebhook(sentByName, passSent, label) end
-          elseif spec.uidErr then warn("[MAIL] skip '"..spec.raw.."': "..tostring(spec.uidErr)) end
-        end
+            task.wait(SEND_DEBOUNCE)
+          end
+          if passSent>0 then postWebhook(sentByName, passSent, label) end
+        elseif spec.uidErr then warn("[MAIL] skip '"..spec.raw.."': "..tostring(spec.uidErr)) end
       end
     end
     return totalSent
   end
+  -- WATCH LOOP: cek + kirim tiap WATCH_INTERVAL. Tiap pass kirim sampai `count` (per-pass; nil = semua)
+  -- dari item yang ADA di inventory sekarang, jadi terus ngalir pas item nambah. (Auto-claim di atas
+  -- juga loop sendiri.)
   print("[MAIL] watch started")
   while mail_active() do
     local ok,err=pcall(doSendPass)
@@ -2338,18 +2343,29 @@ local function runWaterRevive(C)
     return out
   end
 
+  -- DEFER to time-sensitive features: water-revive teleports to plants, which would FIGHT the seed-grab
+  -- (event-seed claim) and buypets (wild-pet tame) when THEY own the character's position. Decay is NOT
+  -- time-critical, so water-revive stands down while a seed event is live/lingering or a buypet trip runs.
+  local function charBusy() return seedEventActive or os.clock() < seedEventLingerUntil or os.clock() < buyPetsUntil end
   print(("[WATER] auto-water-revive armed (every %ds, can=%s)"):format(interval, tostring((wantCan and wantCan ~= "") and wantCan or "any")))
   while active() do
     local decaying = scanDecaying()
-    if #decaying > 0 then
+    if #decaying > 0 and not charBusy() then
       local tool, canName = findCan()
       if tool and canName then
         equip(tool); task.wait(0.15)
+        local bailed = false
         for _,pos in ipairs(decaying) do
           if not active() then break end
-          pcall(function() Net.WateringCan.UseWateringCan:Fire(pos - Vector3.new(0, 0.3, 0), canName, tool) end)
+          if charBusy() then bailed = true; break end   -- seed-event/buypets just started -> yield, let them own the character
+          -- watering is PROXIMITY-checked server-side (unlike harvest) -> teleport NEXT TO the plant first.
+          grabUntil = os.clock() + 1.5; noAnchorUntil = os.clock() + 1.5   -- keep the return-home failsafe from yanking us mid-trip
+          moveTo(pos, 3, "teleport")                                       -- stand on/near the decaying plant
           task.wait(0.1)
+          pcall(function() Net.WateringCan.UseWateringCan:Fire(pos - Vector3.new(0, 0.3, 0), canName, tool) end)
+          task.wait(0.15)
         end
+        if not bailed then pivotGardenCenter("after water-revive") end     -- return home (skip if we yielded to seed/buypets)
         print(("[WATER] watered %d decaying plant(s) with '%s'"):format(#decaying, tostring(canName)))
       else
         warn(("[WATER] %d plant(s) decaying but NO watering can in backpack/character"):format(#decaying))
